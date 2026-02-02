@@ -40,12 +40,11 @@ import {
   InputAdornment
 } from '@mui/material';
 import { clubsApi } from '../../lib/api/clubs';
-import { adminClientTokenApi, getClientUrl } from '../../lib/api/admin';
 import { useSnackbar } from '../../contexts/SnackbarContext';
 import MainCard from '../../components/MainCard';
 import AnimateButton from '../../components/@extended/AnimateButton';
 import ExtendedAvatar from '../../components/@extended/Avatar';
-import { MdArrowBack as ArrowLeft, MdEdit, MdDelete, MdPersonAdd, MdBlock, MdCheckCircle, MdCancel, MdGroup as GroupIcon, MdLocationOn as LocationIcon, MdCalendarToday as CalendarIcon, MdPeople as PeopleIcon, MdTrendingUp as TrendingUpIcon, MdMoreVert as MoreVertIcon, MdPerson as PersonIcon, MdSearch as SearchIcon, MdRefresh as RefreshIcon, MdSwapHoriz as SwapIcon, MdPersonRemove as PersonRemoveIcon, MdAdminPanelSettings as AdminIcon, MdNotifications as NotificationsIcon, MdDescription as DescriptionIcon, MdAttachMoney as MoneyIcon, MdOpenInNew as OpenInNewIcon } from 'react-icons/md';
+import { MdArrowBack as ArrowLeft, MdEdit, MdDelete, MdPersonAdd, MdBlock, MdCheckCircle, MdCancel, MdGroup as GroupIcon, MdLocationOn as LocationIcon, MdCalendarToday as CalendarIcon, MdPeople as PeopleIcon, MdTrendingUp as TrendingUpIcon, MdMoreVert as MoreVertIcon, MdPerson as PersonIcon, MdSearch as SearchIcon, MdRefresh as RefreshIcon, MdSwapHoriz as SwapIcon, MdPersonRemove as PersonRemoveIcon, MdAdminPanelSettings as AdminIcon, MdNotifications as NotificationsIcon, MdDescription as DescriptionIcon, MdAttachMoney as MoneyIcon } from 'react-icons/md';
 
 const ClubDetailPage = () => {
   const { id } = useParams();
@@ -133,6 +132,9 @@ const ClubDetailPage = () => {
   const [currentLeaderNewRole, setCurrentLeaderNewRole] = useState('MANAGER');
   const [showChangeLeaderDialog, setShowChangeLeaderDialog] = useState(false);
 
+  // 공지/규정 내용 보기 모달
+  const [contentModal, setContentModal] = useState({ open: false, title: '', content: '', meta: '' });
+
   // 클럽 상세 정보 조회
   const {
     data: club,
@@ -152,6 +154,23 @@ const ClubDetailPage = () => {
     queryKey: ['admin-club-members', id],
     queryFn: () => clubsApi.getClubMembers(id),
     enabled: !!id,
+  });
+
+  // 클럽 공지사항, 규정, 회비 조회
+  const { data: clubNotices } = useQuery({
+    queryKey: ['admin-club-notices', id],
+    queryFn: () => clubsApi.getClubNotices(id, { limit: 10 }),
+    enabled: !!id && !!club,
+  });
+  const { data: clubRegulations } = useQuery({
+    queryKey: ['admin-club-regulations', id],
+    queryFn: () => clubsApi.getClubRegulations(id),
+    enabled: !!id && !!club,
+  });
+  const { data: clubFees } = useQuery({
+    queryKey: ['admin-club-fees', id],
+    queryFn: () => clubsApi.getClubFees(id),
+    enabled: !!id && !!club,
   });
 
   // 클럽 삭제 mutation
@@ -738,84 +757,190 @@ const ClubDetailPage = () => {
           </Grid>
         </Grid>
 
-        {/* 클럽 정보 보기 버튼들 */}
+        {/* 클럽 정보 (공지/규정/회비) */}
         <MainCard sx={{ width: '100%', maxWidth: 'none' }}>
-          <Stack spacing={2}>
+          <Stack spacing={3}>
             <Stack direction="row" alignItems="center" spacing={2}>
               <GroupIcon style={{ color: '#1976d2' }} />
               <Typography variant="h6">클럽 정보</Typography>
             </Stack>
             <Divider />
-            <Stack direction="row" spacing={2} justifyContent="center">
-              <AnimateButton>
-                <Button
-                  variant="outlined"
-                  size="medium"
-                  startIcon={<NotificationsIcon />}
-                  endIcon={<OpenInNewIcon />}
-                  onClick={async () => {
-                    try {
-                      const tokenData = await adminClientTokenApi.generateClientToken();
-                      const clientUrl = getClientUrl();
-                      const clubDisplayId = club.display_id || id;
-                      const url = `${clientUrl}/clubs/${clubDisplayId}?admin_token=${tokenData.temp_token}#notices`;
-                      window.open(url, '_blank');
-                    } catch (error) {
-                      console.error('클라이언트 토큰 생성 실패:', error);
-                      alert('클라이언트 페이지를 열 수 없습니다. 다시 시도해주세요.');
-                    }
-                  }}
-                >
-                  공지사항 보기
-                </Button>
-              </AnimateButton>
-              <AnimateButton>
-                <Button
-                  variant="outlined"
-                  size="medium"
-                  startIcon={<DescriptionIcon />}
-                  endIcon={<OpenInNewIcon />}
-                  onClick={async () => {
-                    try {
-                      const tokenData = await adminClientTokenApi.generateClientToken();
-                      const clientUrl = getClientUrl();
-                      const clubDisplayId = club.display_id || id;
-                      const url = `${clientUrl}/clubs/${clubDisplayId}?admin_token=${tokenData.temp_token}#regulations`;
-                      window.open(url, '_blank');
-                    } catch (error) {
-                      console.error('클라이언트 토큰 생성 실패:', error);
-                      alert('클라이언트 페이지를 열 수 없습니다. 다시 시도해주세요.');
-                    }
-                  }}
-                >
-                  규정 보기
-                </Button>
-              </AnimateButton>
-              <AnimateButton>
-                <Button
-                  variant="outlined"
-                  size="medium"
-                  startIcon={<MoneyIcon />}
-                  endIcon={<OpenInNewIcon />}
-                  onClick={async () => {
-                    try {
-                      const tokenData = await adminClientTokenApi.generateClientToken();
-                      const clientUrl = getClientUrl();
-                      const clubDisplayId = club.display_id || id;
-                      const url = `${clientUrl}/clubs/${clubDisplayId}?admin_token=${tokenData.temp_token}#fees`;
-                      window.open(url, '_blank');
-                    } catch (error) {
-                      console.error('클라이언트 토큰 생성 실패:', error);
-                      alert('클라이언트 페이지를 열 수 없습니다. 다시 시도해주세요.');
-                    }
-                  }}
-                >
-                  회비 보기
-                </Button>
-              </AnimateButton>
-            </Stack>
+            <Grid container spacing={3}>
+              {/* 공지사항 */}
+              <Grid item xs={12} md={4}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                  <Typography variant="subtitle1" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <NotificationsIcon fontSize="small" /> 공지사항
+                  </Typography>
+                  <Button size="small" variant="outlined" onClick={() => navigate(`/clubs/${id}/notices`)}>
+                    관리
+                  </Button>
+                </Stack>
+                <Box sx={{ maxHeight: 240, overflow: 'auto', border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.5 }}>
+                  {clubNotices?.data?.length > 0 ? (
+                    <Stack spacing={1}>
+                      {clubNotices.data.map((n) => (
+                        <Box
+                          key={n.id}
+                          onClick={() => setContentModal({
+                            open: true,
+                            title: (n.is_important ? '📌 ' : '') + n.title,
+                            content: n.content || '',
+                            meta: `${n.author_name || ''} · ${n.created_at ? new Date(n.created_at).toLocaleDateString('ko-KR') : ''}`,
+                          })}
+                          sx={{
+                            pb: 1,
+                            borderBottom: '1px solid',
+                            borderColor: 'divider',
+                            '&:last-child': { borderBottom: 0 },
+                            cursor: 'pointer',
+                            '&:hover': { bgcolor: 'action.hover' },
+                            borderRadius: 1,
+                            px: 0.5,
+                            mx: -0.5,
+                          }}
+                        >
+                          <Typography variant="body2" fontWeight={500}>{n.is_important && '📌 '}{n.title}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {n.author_name} · {n.created_at ? new Date(n.created_at).toLocaleDateString('ko-KR') : ''}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Stack>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">아직 등록된 공지사항이 없습니다</Typography>
+                  )}
+                </Box>
+              </Grid>
+              {/* 규정 */}
+              <Grid item xs={12} md={4}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                  <Typography variant="subtitle1" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <DescriptionIcon fontSize="small" /> 규정
+                  </Typography>
+                  <Button size="small" variant="outlined" onClick={() => navigate(`/clubs/${id}/regulations`)}>
+                    관리
+                  </Button>
+                </Stack>
+                <Box sx={{ maxHeight: 240, overflow: 'auto', border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.5 }}>
+                  {clubRegulations?.categories?.length > 0 ? (
+                    <Stack spacing={1}>
+                      {clubRegulations.categories.map((cat) => (
+                        <Box key={cat.id}>
+                          <Typography variant="body2" fontWeight={600}>{cat.name}</Typography>
+                          {cat.regulations?.length > 0 ? (
+                            cat.regulations.map((r) => (
+                              <Typography
+                                key={r.id}
+                                variant="caption"
+                                display="block"
+                                sx={{
+                                  pl: 1,
+                                  cursor: 'pointer',
+                                  '&:hover': { color: 'primary.main', textDecoration: 'underline' },
+                                }}
+                                onClick={() => setContentModal({
+                                  open: true,
+                                  title: r.title,
+                                  content: r.content || '',
+                                  meta: `${cat.name}`,
+                                })}
+                              >
+                                · {r.title}
+                              </Typography>
+                            ))
+                          ) : (
+                            <Typography variant="caption" color="text.secondary" sx={{ pl: 1 }}>항목 없음</Typography>
+                          )}
+                        </Box>
+                      ))}
+                    </Stack>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">아직 등록된 규정이 없습니다</Typography>
+                  )}
+                </Box>
+              </Grid>
+              {/* 회비 */}
+              <Grid item xs={12} md={4}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                  <Typography variant="subtitle1" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <MoneyIcon fontSize="small" /> 회비
+                  </Typography>
+                  <Button size="small" variant="outlined" onClick={() => navigate(`/clubs/${id}/fees`)}>
+                    관리
+                  </Button>
+                </Stack>
+                <Box sx={{ maxHeight: 240, overflow: 'auto', border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.5 }}>
+                  {clubFees?.length > 0 ? (
+                    <Stack spacing={1}>
+                      {clubFees.map((f) => (
+                        <Box key={f.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Typography variant="body2">{f.name}</Typography>
+                          <Typography variant="body2" fontWeight={600}>
+                            {Number(f.amount)?.toLocaleString()}원
+                            {f.cycle ? ` / ${({ MONTHLY: '월', QUARTERLY: '분기', YEARLY: '년', ONE_TIME: '1회' })[f.cycle] || f.cycle}` : ''}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Stack>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">아직 등록된 회비 항목이 없습니다</Typography>
+                  )}
+                </Box>
+              </Grid>
+            </Grid>
           </Stack>
         </MainCard>
+
+        {/* 공지/규정 내용 보기 모달 */}
+        <Dialog
+          open={contentModal.open}
+          onClose={() => setContentModal((p) => ({ ...p, open: false }))}
+          maxWidth="md"
+          fullWidth
+          PaperProps={{ sx: { maxHeight: '80vh' } }}
+        >
+          <DialogTitle sx={{ display: 'block' }}>
+            <Typography component="span" variant="h6" sx={{ display: 'block' }}>
+              {contentModal.title}
+            </Typography>
+            {contentModal.meta && (
+              <Typography component="span" variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                {contentModal.meta}
+              </Typography>
+            )}
+          </DialogTitle>
+          <DialogContent dividers>
+            <Box
+              sx={{
+                '& .rich-content': {
+                  fontSize: '15px',
+                  lineHeight: 1.8,
+                  color: 'text.primary',
+                },
+                '& .rich-content h1, & .rich-content h2, & .rich-content h3': { fontSize: '1.1em', fontWeight: 600, mt: 1.5, mb: 0.5 },
+                '& .rich-content p': { margin: '0.5em 0' },
+                '& .rich-content img': { maxWidth: '100%', height: 'auto', borderRadius: 1 },
+                '& .rich-content ul, & .rich-content ol': { pl: 2.5, my: 0.5 },
+                '& .rich-content a': { color: 'primary.main', textDecoration: 'underline' },
+                '& .rich-content blockquote': { borderLeft: 4, borderColor: 'divider', pl: 2, my: 1, color: 'text.secondary' },
+              }}
+            >
+              {contentModal.content ? (
+                <Box
+                  className="rich-content"
+                  component="div"
+                  dangerouslySetInnerHTML={{ __html: contentModal.content }}
+                />
+              ) : (
+                <Typography color="text.secondary">내용 없음</Typography>
+              )}
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setContentModal((p) => ({ ...p, open: false }))}>닫기</Button>
+          </DialogActions>
+        </Dialog>
 
         {/* 아래는 전체폭으로 멤버 목록 */}
         <MainCard sx={{ width: '100%', maxWidth: 'none' }}>

@@ -38,6 +38,13 @@ const menuItems = [
         type: 'item',
         url: '/users',
         icon: SubMenuIcon
+      },
+      {
+        id: 'admin-list',
+        title: '관리자',
+        type: 'item',
+        url: '/admins',
+        icon: SubMenuIcon
       }
     ]
   },
@@ -129,6 +136,8 @@ export default function DrawerContent({ drawerOpen = true }) {
       setSelected('dashboard');
     } else if (path.startsWith('/users')) {
       setSelected('user-list');
+    } else if (path.startsWith('/admins')) {
+      setSelected('admin-list');
     } else if (path.startsWith('/clubs')) {
       setSelected('club-list');
     } else if (path.startsWith('/rounds')) {

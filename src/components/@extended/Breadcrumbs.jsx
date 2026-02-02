@@ -71,6 +71,7 @@ export default function Breadcrumbs({
     const pathToKorean = {
       'dashboard': '대시보드',
       'users': '사용자 관리',
+      'admins': '관리자 관리',
       'clubs': '클럽 관리',
       'applications': '신청 관리',
       'rounds': '라운딩 관리',
@@ -108,8 +109,12 @@ export default function Breadcrumbs({
         
         // 사용자 상세 페이지인 경우 (/users/:id 패턴)
         if (mainSegment === 'users' && pathSegments.length === 2 && lastSegment !== 'create') {
-          // Breadcrumb item은 '사용자 상세'로 표시
           itemTitle = '사용자 상세';
+        }
+        // 관리자 관련 페이지
+        if (mainSegment === 'admins') {
+          if (lastSegment === 'create') itemTitle = '관리자 추가';
+          else if (pathSegments.length === 2) itemTitle = '관리자 상세';
         }
         
         if (mainSegment === 'clubs') {
@@ -126,8 +131,20 @@ export default function Breadcrumbs({
             itemTitle = '클럽 상세';
           }
           // /clubs/{id}/edit 패턴이면 '클럽 수정'으로 표시
-          else if (pathSegments.length === 3 && lastSegment === 'edit') {
+          else if (pathSegments.length === 3 && pathSegments[1] !== 'applications' && lastSegment === 'edit') {
             itemTitle = '클럽 수정';
+          }
+          // /clubs/{id}/notices, /clubs/{id}/notices/create, /clubs/{id}/notices/{id}/edit
+          else if (pathSegments[2] === 'notices') {
+            itemTitle = lastSegment === 'create' ? '공지 추가' : lastSegment === 'edit' ? '공지 수정' : '공지사항';
+          }
+          // /clubs/{id}/regulations
+          else if (pathSegments[2] === 'regulations') {
+            itemTitle = lastSegment === 'create' ? '규정 추가' : lastSegment === 'edit' ? '규정 수정' : '규정';
+          }
+          // /clubs/{id}/fees
+          else if (pathSegments[2] === 'fees') {
+            itemTitle = '회비';
           }
         }
         
