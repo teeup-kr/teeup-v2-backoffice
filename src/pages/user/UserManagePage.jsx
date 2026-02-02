@@ -52,30 +52,6 @@ const getStatusColor = (status) => {
   }
 };
 
-// 역할별 색상 매핑
-const getRoleColor = (role) => {
-  switch (role) {
-    case 'ADMIN':
-      return 'error';
-    case 'USER':
-      return 'primary';
-    default:
-      return 'default';
-  }
-};
-
-// 역할별 텍스트 표시
-const getRoleLabel = (role) => {
-  switch (role) {
-    case 'ADMIN':
-      return '관리자';
-    case 'USER':
-      return '일반 사용자';
-    default:
-      return role || '알 수 없음';
-  }
-};
-
 // 상태별 텍스트 표시
 const getStatusLabel = (status) => {
   switch (status) {
@@ -104,12 +80,10 @@ const UserManagePage = () => {
   // 필터 상태 (UI용)
   const [searchTerm, setSearchTerm] = useState('');
   const [status, setStatus] = useState('');
-  const [role, setRole] = useState('');
   
   // 실제 검색에 사용되는 상태 (검색버튼 클릭 시에만 업데이트)
   const [activeSearchTerm, setActiveSearchTerm] = useState('');
   const [activeStatus, setActiveStatus] = useState('');
-  const [activeRole, setActiveRole] = useState('');
   
   // 다이얼로그 상태
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -117,25 +91,15 @@ const UserManagePage = () => {
 
   // 사용자 목록 조회
   const { data: usersData, isLoading, error } = useQuery({
-    queryKey: ['users', page, rowsPerPage, activeSearchTerm, activeStatus, activeRole, 'recent'],
-    queryFn: () => {
-      console.log('API 호출 파라미터:', {
+    queryKey: ['users', page, rowsPerPage, activeSearchTerm, activeStatus, 'recent'],
+    queryFn: () =>
+      adminUsersApi.getUsers({
         page: page + 1,
         limit: rowsPerPage,
         search: activeSearchTerm,
-        role_filter: activeRole,
         status_filter: activeStatus,
         sort_order: 'recent'
-      });
-      return adminUsersApi.getUsers({
-        page: page + 1,
-        limit: rowsPerPage,
-        search: activeSearchTerm,
-        role_filter: activeRole,
-        status_filter: activeStatus,
-        sort_order: 'recent'
-      });
-    },
+      }),
     staleTime: 0,
     cacheTime: 0
   });
@@ -217,7 +181,6 @@ const UserManagePage = () => {
   const handleSearch = () => {
     setActiveSearchTerm(searchTerm);
     setActiveStatus(status);
-    setActiveRole(role);
     setPage(0);
   };
 
@@ -225,17 +188,11 @@ const UserManagePage = () => {
     setStatus(e.target.value);
   };
 
-  const handleRoleChange = (e) => {
-    setRole(e.target.value);
-  };
-
   const handleResetFilters = () => {
     setSearchTerm('');
     setStatus('');
-    setRole('');
     setActiveSearchTerm('');
     setActiveStatus('');
-    setActiveRole('');
     setPage(0);
   };
 
@@ -296,7 +253,7 @@ const UserManagePage = () => {
       {/* 검색 및 필터 */}
       <MainCard sx={{ mb: 3 }}>
         {/* 적용된 필터 표시 */}
-        {(activeSearchTerm || activeStatus || activeRole) && (
+        {(activeSearchTerm || activeStatus) && (
           <Box sx={{ mb: 2 }}>
             <Typography variant="subtitle2" color="textSecondary" gutterBottom>
               적용된 필터:
@@ -326,20 +283,6 @@ const UserManagePage = () => {
                     queryClient.invalidateQueries({ queryKey: ['users'] });
                   }}
                   color="secondary"
-                  variant="outlined"
-                  size="small"
-                />
-              )}
-              {activeRole && (
-                <Chip
-                  label={`역할: ${getRoleLabel(activeRole)}`}
-                  onDelete={() => {
-                    setRole('');
-                    setActiveRole('');
-                    setPage(0);
-                    queryClient.invalidateQueries({ queryKey: ['users'] });
-                  }}
-                  color="info"
                   variant="outlined"
                   size="small"
                 />
@@ -385,23 +328,6 @@ const UserManagePage = () => {
                 <MenuItem value="ACTIVE">활성</MenuItem>
                 <MenuItem value="DEACTIVATED">비활성</MenuItem>
                 <MenuItem value="DELETED">삭제됨</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          
-          {/* 역할 필터 */}
-          <Grid item xs={12} sm={4} md={3}>
-            <FormControl fullWidth>
-              <InputLabel>역할</InputLabel>
-              <Select
-                value={role}
-                onChange={handleRoleChange}
-                label="역할"
-                sx={{ minWidth: 200 }}
-              >
-                <MenuItem value="">모든 역할</MenuItem>
-                <MenuItem value="USER">일반 사용자</MenuItem>
-                <MenuItem value="ADMIN">관리자</MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -453,7 +379,6 @@ const UserManagePage = () => {
                 <TableCell width="60" align="center">번호</TableCell>
                 <TableCell>사용자</TableCell>
                 <TableCell>이메일</TableCell>
-                <TableCell>역할</TableCell>
                 <TableCell>상태</TableCell>
                 <TableCell>가입일</TableCell>
                 <TableCell align="center">액션</TableCell>
@@ -462,7 +387,7 @@ const UserManagePage = () => {
             <TableBody>
               {users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
+                  <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
                     <Stack spacing={2} alignItems="center">
                       <Box
                         sx={{
@@ -478,11 +403,11 @@ const UserManagePage = () => {
                         <SearchIcon size={32} style={{ color: 'rgba(0, 0, 0, 0.6)' }} />
                       </Box>
                       <Typography variant="h6" color="text.secondary">
-                        {(activeSearchTerm || activeStatus || activeRole)
+                        {(activeSearchTerm || activeStatus)
                           ? '해당하는 사용자 정보가 없습니다'
                           : '등록된 사용자가 없습니다'}
                       </Typography>
-                      {(activeSearchTerm || activeStatus || activeRole) && (
+                      {(activeSearchTerm || activeStatus) && (
                         <Typography variant="body2" color="text.disabled">
                           검색 조건을 변경하거나 필터를 초기화해보세요
                         </Typography>
@@ -532,14 +457,6 @@ const UserManagePage = () => {
                       <Typography variant="body2">
                         {user.email}
                       </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={getRoleLabel(user.role)}
-                        color={getRoleColor(user.role)}
-                        size="small"
-                        variant="outlined"
-                      />
                     </TableCell>
                     <TableCell>
                       <Chip

@@ -451,28 +451,6 @@ const UserDetailPage = () => {
     }
   };
 
-  const getRoleColor = (role) => {
-    switch (role) {
-      case 'ADMIN':
-        return 'error';
-      case 'USER':
-        return 'primary';
-      default:
-        return 'default';
-    }
-  };
-
-  const getRoleLabel = (role) => {
-    switch (role) {
-      case 'ADMIN':
-        return '관리자';
-      case 'USER':
-        return '사용자';
-      default:
-        return role || '알 수 없음';
-    }
-  };
-
   const getClubRoleColor = (role) => {
     switch (role) {
       case 'LEADER':
@@ -977,11 +955,6 @@ const UserDetailPage = () => {
                 
                 <Grid item xs={12}>
                   <Box display="flex" gap={1} flexWrap="wrap">
-                    <Chip
-                      label={`역할: ${getRoleLabel(user.role)}`}
-                      color={getRoleColor(user.role || '')}
-                      size="small"
-                    />
                     <Chip
                       label={`상태: ${getStatusLabel(user.status)}`}
                       color={getStatusColor(user.status || '')}

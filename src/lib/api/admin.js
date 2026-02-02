@@ -2,28 +2,18 @@ import axios from 'axios';
 import { setupResponseInterceptor, handleApiError } from './errorHandler.js';
 
 // API 기본 설정
-// mobile-web과 동일한 로직 사용: 프로덕션에서는 상대 경로 사용
+// 프로덕션에서는 상대 경로 사용 (nginx 프록시), 개발에서는 VITE_API_BASE_URL로 직접 요청 (백엔드 CORS 허용 필요)
 const getApiBaseUrl = () => {
-  // 프로덕션 환경에서는 상대 경로 사용 (nginx 프록시 활용)
   if (import.meta.env.PROD) {
-    return ''; // 빈 문자열 = 현재 도메인 (mobile-web과 동일)
+    return '';
   }
-  
-  // 개발 환경: 환경 변수 필수
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-  
   if (!apiBaseUrl) {
-    console.error('VITE_API_BASE_URL 환경 변수가 설정되지 않았습니다.');
     throw new Error('VITE_API_BASE_URL 환경 변수가 필요합니다.');
   }
-  
-  // HTTP URL을 HTTPS로 자동 변환
-  if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
-    if (apiBaseUrl.startsWith('http://')) {
-      return apiBaseUrl.replace('http://', 'https://');
-    }
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:' && apiBaseUrl.startsWith('http://')) {
+    return apiBaseUrl.replace('http://', 'https://');
   }
-  
   return apiBaseUrl;
 };
 
@@ -88,6 +78,21 @@ apiClient.interceptors.request.use(
 
 // 응답 인터셉터 설정 (apiClient 인스턴스에 적용)
 setupResponseInterceptor(apiClient);
+
+// 헤더 전역 검색 API (GET /admin/search)
+export const adminSearchApi = {
+  globalSearch: async (params) => {
+    try {
+      const { q, limit = 5, types = 'users,clubs,meetings,admins' } = params;
+      const response = await apiClient.get('/admin/search', {
+        params: { q: q?.trim(), limit, types },
+      });
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+};
 
 // 관리자 대시보드 API
 export const adminDashboardApi = {
@@ -292,6 +297,70 @@ export const adminUsersApi = {
   getUserHandicapHistory: async (userId, params = {}) => {
     try {
       const response = await apiClient.get(`/admin/users/${userId}/handicap-history`, { params });
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+};
+
+// 관리자 계정 API (Admin 모델 - users와 분리, 백엔드 /admin/admins 엔드포인트)
+export const adminAdminsApi = {
+  // 관리자 목록 조회 - params: page, limit, search, status_filter
+  getAdmins: async (params = {}) => {
+    try {
+      const { role, ...rest } = params;
+      const response = await apiClient.get('/admin/admins', { params: rest });
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // 관리자 상세 조회
+  getAdmin: async (adminId) => {
+    try {
+      const response = await apiClient.get(`/admin/admins/${adminId}`);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // 관리자 생성 - { email, password, name, phone_number?, profile_image? }
+  createAdmin: async (adminData) => {
+    try {
+      const response = await apiClient.post('/admin/admins', adminData);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // 관리자 수정 - { name?, phone_number?, profile_image?, status? }
+  updateAdmin: async (adminId, adminData) => {
+    try {
+      const response = await apiClient.put(`/admin/admins/${adminId}`, adminData);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // 관리자 비밀번호 변경
+  updateAdminPassword: async (adminId, data) => {
+    try {
+      const response = await apiClient.put(`/admin/admins/${adminId}/password`, data);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // 관리자 삭제 (soft delete)
+  deleteAdmin: async (adminId) => {
+    try {
+      const response = await apiClient.delete(`/admin/admins/${adminId}`);
       return response.data;
     } catch (error) {
       throw handleApiError(error);

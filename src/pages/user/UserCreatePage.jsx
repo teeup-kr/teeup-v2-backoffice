@@ -36,7 +36,6 @@ const UserCreatePage = () => {
     birthdate: '',
     gender: '',
     status: 'ACTIVE',
-    role: 'USER',
     handicap: '',
     average_score: ''
   });
@@ -180,7 +179,6 @@ const UserCreatePage = () => {
       birthdate: formData.birthdate || null,
       gender: formData.gender || null,
       status: formData.status,
-      role: formData.role,
       handicap: formData.handicap ? parseFloat(formData.handicap) : null,
       average_score: formData.average_score ? parseInt(formData.average_score) : null,
       needs_terms_agreement: false
@@ -309,7 +307,6 @@ const UserCreatePage = () => {
     );
   }
 
-  const roles = formDataResponse?.data?.roles || ['USER', 'ADMIN'];
   const statuses = formDataResponse?.data?.statuses || ['ACTIVE', 'DEACTIVATED', 'DELETED'];
 
   return (
@@ -471,23 +468,6 @@ const UserCreatePage = () => {
                     </FormControl>
                   </Grid>
                   
-                  <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth sx={{ minWidth: 200 }}>
-                      <InputLabel>역할*</InputLabel>
-                      <Select
-                        value={formData.role}
-                        onChange={handleInputChange('role')}
-                        label="역할*"
-                        required
-                      >
-                        {roles.map((role) => (
-                          <MenuItem key={role} value={role}>
-                            {role === 'ADMIN' ? '관리자' : '사용자'}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
                 </Grid>
               </CardContent>
             </Card>

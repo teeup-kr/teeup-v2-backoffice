@@ -193,6 +193,93 @@ export const clubsApi = {
     return response.data;
   },
 
+  /** 클럽 공지사항 조회 (관리자용) */
+  getClubNotices: async (clubId, params = {}) => {
+    const { page = 1, limit = 20 } = params;
+    const response = await apiClient.get(`/v1/admin/clubs/${clubId}/notices`, {
+      params: { page, limit },
+    });
+    return response.data;
+  },
+
+  /** 클럽 규정 조회 (관리자용) */
+  getClubRegulations: async (clubId) => {
+    const response = await apiClient.get(`/v1/admin/clubs/${clubId}/regulations`);
+    return response.data;
+  },
+
+  /** 클럽 회비 항목 조회 (관리자용) */
+  getClubFees: async (clubId) => {
+    const response = await apiClient.get(`/v1/admin/clubs/${clubId}/fees`);
+    return response.data;
+  },
+
+  // ===== 클럽 공지사항 CUD (관리자용) =====
+  createClubNotice: async (clubId, data) => {
+    const response = await apiClient.post(`/v1/admin/clubs/${clubId}/notices`, data);
+    return response.data;
+  },
+  getClubNotice: async (clubId, noticeId) => {
+    const response = await apiClient.get(`/v1/admin/clubs/${clubId}/notices/${noticeId}`);
+    return response.data;
+  },
+  updateClubNotice: async (clubId, noticeId, data) => {
+    const response = await apiClient.put(`/v1/admin/clubs/${clubId}/notices/${noticeId}`, data);
+    return response.data;
+  },
+  deleteClubNotice: async (clubId, noticeId) => {
+    const response = await apiClient.delete(`/v1/admin/clubs/${clubId}/notices/${noticeId}`);
+    return response.data;
+  },
+
+  // ===== 클럽 회비 CUD (관리자용) =====
+  createClubFee: async (clubId, data) => {
+    const response = await apiClient.post(`/v1/admin/clubs/${clubId}/fees`, data);
+    return response.data;
+  },
+  updateClubFee: async (clubId, feeId, data) => {
+    const response = await apiClient.put(`/v1/admin/clubs/${clubId}/fees/${feeId}`, data);
+    return response.data;
+  },
+  deleteClubFee: async (clubId, feeId) => {
+    const response = await apiClient.delete(`/v1/admin/clubs/${clubId}/fees/${feeId}`);
+    return response.data;
+  },
+
+  // ===== 클럽 규정 CUD (관리자용) =====
+  getClubRegulationCategories: async (clubId) => {
+    const response = await apiClient.get(`/v1/admin/clubs/${clubId}/regulations/categories`);
+    return response.data;
+  },
+  createClubRegulationCategory: async (clubId, data) => {
+    const response = await apiClient.post(`/v1/admin/clubs/${clubId}/regulations/categories`, data);
+    return response.data;
+  },
+  updateClubRegulationCategory: async (clubId, categoryId, data) => {
+    const response = await apiClient.put(`/v1/admin/clubs/${clubId}/regulations/categories/${categoryId}`, data);
+    return response.data;
+  },
+  deleteClubRegulationCategory: async (clubId, categoryId) => {
+    const response = await apiClient.delete(`/v1/admin/clubs/${clubId}/regulations/categories/${categoryId}`);
+    return response.data;
+  },
+  createClubRegulation: async (clubId, data) => {
+    const response = await apiClient.post(`/v1/admin/clubs/${clubId}/regulations`, data);
+    return response.data;
+  },
+  getClubRegulation: async (clubId, regulationId) => {
+    const response = await apiClient.get(`/v1/admin/clubs/${clubId}/regulations/${regulationId}`);
+    return response.data;
+  },
+  updateClubRegulation: async (clubId, regulationId, data) => {
+    const response = await apiClient.put(`/v1/admin/clubs/${clubId}/regulations/${regulationId}`, data);
+    return response.data;
+  },
+  deleteClubRegulation: async (clubId, regulationId) => {
+    const response = await apiClient.delete(`/v1/admin/clubs/${clubId}/regulations/${regulationId}`);
+    return response.data;
+  },
+
   /**
    * 클럽 생성 (관리자용)
    * @param {ClubCreateRequest} clubData - 클럽 데이터

@@ -29,11 +29,23 @@ import UserManagePage from './pages/user/UserManagePage';
 import UserDetailPage from './pages/user/UserDetailPage';
 import UserCreatePage from './pages/user/UserCreatePage';
 
+// Admin management pages
+import AdminManagePage from './pages/admin/AdminManagePage';
+import AdminDetailPage from './pages/admin/AdminDetailPage';
+import AdminCreatePage from './pages/admin/AdminCreatePage';
+
 // Club management pages
 import ClubListPage from './pages/clubs/ClubListPage';
 import ClubDetailPage from './pages/clubs/ClubDetailPage';
 import ClubCreatePage from './pages/clubs/ClubCreatePage';
 import ClubEditPage from './pages/clubs/ClubEditPage';
+import ClubNoticesPage from './pages/clubs/ClubNoticesPage';
+import ClubNoticeCreatePage from './pages/clubs/ClubNoticeCreatePage';
+import ClubNoticeEditPage from './pages/clubs/ClubNoticeEditPage';
+import ClubRegulationsPage from './pages/clubs/ClubRegulationsPage';
+import ClubRegulationCreatePage from './pages/clubs/ClubRegulationCreatePage';
+import ClubRegulationEditPage from './pages/clubs/ClubRegulationEditPage';
+import ClubFeesPage from './pages/clubs/ClubFeesPage';
 import ClubApplicationsPage from './pages/clubs/ClubApplicationsPage';
 import ClubApplicationDetailPage from './pages/clubs/ClubApplicationDetailPage';
 
@@ -111,11 +123,23 @@ function App() {
             <Route path="users/create" element={<UserCreatePage />} />
             <Route path="users/:id" element={<UserDetailPage />} />
 
+            {/* Admin management */}
+            <Route path="admins" element={<AdminManagePage />} />
+            <Route path="admins/create" element={<AdminCreatePage />} />
+            <Route path="admins/:id" element={<AdminDetailPage />} />
+
             {/* Club management */}
             <Route path="clubs" element={<ClubListPage />} />
             <Route path="clubs/create" element={<ClubCreatePage />} />
             <Route path="clubs/:id" element={<ClubDetailPage />} />
             <Route path="clubs/:id/edit" element={<ClubEditPage />} />
+            <Route path="clubs/:id/notices" element={<ClubNoticesPage />} />
+            <Route path="clubs/:id/notices/create" element={<ClubNoticeCreatePage />} />
+            <Route path="clubs/:id/notices/:noticeId/edit" element={<ClubNoticeEditPage />} />
+            <Route path="clubs/:id/regulations" element={<ClubRegulationsPage />} />
+            <Route path="clubs/:id/regulations/create" element={<ClubRegulationCreatePage />} />
+            <Route path="clubs/:id/regulations/:regulationId/edit" element={<ClubRegulationEditPage />} />
+            <Route path="clubs/:id/fees" element={<ClubFeesPage />} />
             <Route path="clubs/applications" element={<ClubApplicationsPage />} />
             <Route path="clubs/applications/:id" element={<ClubApplicationDetailPage />} />
 
