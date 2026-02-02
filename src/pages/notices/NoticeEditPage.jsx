@@ -26,6 +26,7 @@ import {
 } from '@mui/material';
 import { adminNoticesApi } from '../../lib/api/admin';
 import AnimateButton from '../../components/@extended/AnimateButton';
+import { TipTapEditor } from '../../components/RichTextEditor';
 import { 
   MdArrowBack as ArrowLeft, 
   MdSave as Save,
@@ -40,6 +41,7 @@ const NoticeEditPage = () => {
   const queryClient = useQueryClient();
   const fileInputRef = useRef(null);
   const editorRef = useRef(null);
+  const editorContentRef = useRef('');
   
   const [formData, setFormData] = useState({
     title: '',
@@ -67,257 +69,17 @@ const NoticeEditPage = () => {
     enabled: !!id
   });
 
-  // 스크립트 로드 함수
-  const loadScript = (src) => new Promise((resolve, reject) => {
-    const existing = document.querySelector(`script[src="${src}"]`);
-    if (existing) {
-      resolve();
-      return;
-    }
-    const s = document.createElement('script');
-    s.src = src;
-    s.async = true;
-    s.onload = resolve;
-    s.onerror = reject;
-    document.head.appendChild(s);
-  });
-
-  // CSS 로드 함수
-  const loadCss = (href) => new Promise((resolve, reject) => {
-    const existing = document.querySelector(`link[href="${href}"]`);
-    if (existing) {
-      resolve();
-      return;
-    }
-    const l = document.createElement('link');
-    l.rel = 'stylesheet';
-    l.href = href;
-    l.onload = resolve;
-    l.onerror = reject;
-    document.head.appendChild(l);
-  });
-
-  // YouTube URL 정규식 및 iframe 변환 함수
-  const YT_URL_RE = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/;
-  const makeIframeHTML = (id) => `<iframe src="https://www.youtube.com/embed/${id}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy" style="width:100%; aspect-ratio:16/9;"></iframe>`;
-
-  // HTML Sanitizer
-  const youtubeAndImageSanitizer = (html) => {
-    try {
-      const doc = new DOMParser().parseFromString(html, 'text/html');
-      const allowed = new Set(['DIV','IFRAME','#text','P','BR','SPAN','B','I','EM','STRONG','UL','OL','LI','H1','H2','H3','H4','H5','H6','BLOCKQUOTE','CODE','PRE','TABLE','THEAD','TBODY','TR','TH','TD','HR','A','IMG','STYLE']);
-      doc.body.querySelectorAll('*').forEach((el) => {
-        const nm = el.nodeName;
-        if (!allowed.has(nm)) { el.remove(); return; }
-        [...el.attributes].forEach(a => { if (a.name.toLowerCase().startsWith('on')) el.removeAttribute(a.name); });
-        if (nm === 'A') { el.setAttribute('rel','noopener noreferrer'); el.setAttribute('target','_blank'); }
-        if (nm === 'IMG') {
-          const safe = new Set(['src','alt','style','width','height','loading']);
-          [...el.attributes].forEach(a => { if (!safe.has(a.name.toLowerCase())) el.removeAttribute(a.name); });
-        }
-        if (nm === 'IFRAME') {
-          const src = el.getAttribute('src') || '';
-          const ok = /^https:\/\/(?:www\.)?youtube\.com\/embed\/[A-Za-z0-9_-]{11}$/.test(src);
-          if (!ok) { el.remove(); return; }
-          const safe = new Set(['src','title','frameborder','allow','allowfullscreen','loading','style']);
-          [...el.attributes].forEach(a => { if (!safe.has(a.name.toLowerCase())) el.removeAttribute(a.name); });
-        }
-      });
-      return doc.body.innerHTML;
-    } catch { return ''; }
+  // 이미지 업로드 핸들러
+  const handleImageUpload = async (file) => {
+    const result = await adminNoticesApi.uploadFile(file);
+    return result.web_view_link || result.web_content_link || result.file_id || '';
   };
 
-  // 에디터 초기화 함수
-  const initEditor = (initialContent = '') => {
-    if (!window.toastui?.Editor) {
-      console.warn('Toast UI Editor가 로드되지 않았습니다.');
-      return;
-    }
-    const { Editor } = window.toastui;
-    const el = document.getElementById('notice-editor');
-    if (!el) {
-      console.warn('에디터 엘리먼트를 찾을 수 없습니다.');
-      return;
-    }
-    
-    // 기존 에디터가 있으면 제거
-    if (editorRef.current) {
-      try {
-        editorRef.current.destroy();
-      } catch (e) {
-        // ignore
-      }
-      editorRef.current = null;
-    }
-
-    const customHTMLRenderer = {
-      htmlBlock: {
-        iframe(node) {
-          return [
-            { type: 'openTag', tagName: 'iframe', outerNewLine: true, attributes: node.attrs },
-            { type: 'html', content: node.childrenHTML },
-            { type: 'closeTag', tagName: 'iframe', outerNewLine: true },
-          ];
-        },
-      },
-    };
-
-    const ed = new Editor({
-      el,
-      height: '600px',
-      initialEditType: 'wysiwyg',
-      previewStyle: 'tab',
-      usageStatistics: false,
-      language: 'ko-KR',
-      placeholder: '내용을 입력하세요',
-      initialValue: initialContent,
-      toolbarItems: [
-        ['heading', 'bold', 'italic', 'strike'],
-        ['hr', 'quote'],
-        ['ul', 'ol', 'task'],
-        ['table', 'image', 'link'],
-        ['code', 'codeblock']
-      ],
-      customHTMLSanitizer: youtubeAndImageSanitizer,
-      customHTMLRenderer,
-      hooks: {
-        addImageBlobHook: async (blob, callback) => {
-          try {
-            const result = await adminNoticesApi.uploadFile(blob);
-            // 이미지 URL을 반환 (업로드된 URL)
-            const imageUrl = result.web_view_link || result.web_content_link || result.file_id;
-            callback(imageUrl, '이미지 업로드 완료');
-          } catch (error) {
-            console.error('이미지 업로드 오류:', error);
-            callback('', error.response?.data?.detail || '이미지 업로드에 실패했습니다.');
-          }
-        },
-      },
-    });
-
-    // 붙여넣기에서 YouTube URL 탐지 및 이미지 처리
-    const root =
-      el.querySelector('.toastui-editor-ww-mode') ||
-      el.querySelector('.toastui-editor-md-container textarea');
-    
-    root?.addEventListener('paste', (e) => {
-      const cd = e.clipboardData || window.clipboardData;
-      const text = cd?.getData('text') || '';
-      
-      // 이미지 붙여넣기 처리
-      const items = cd?.items;
-      if (items) {
-        for (let i = 0; i < items.length; i++) {
-          const item = items[i];
-          if (item.type.indexOf('image') !== -1) {
-            const blob = item.getAsFile();
-            if (blob) {
-              e.preventDefault();
-              const formData = new FormData();
-              formData.append('file', blob, 'image.jpg');
-              adminNoticesApi.uploadFile(blob)
-                .then(result => {
-                  if (result.web_view_link || result.web_content_link || result.file_id) {
-                    const imageUrl = result.web_view_link || result.web_content_link || result.file_id;
-                    const currentHTML = ed.getHTML();
-                    const newHTML = currentHTML + `<img src="${imageUrl}" alt="업로드된 이미지" style="max-width: 100%; height: auto;"><br>`;
-                    ed.setHTML(newHTML);
-                  }
-                })
-                .catch(error => console.error('이미지 업로드 오류:', error));
-              return;
-            }
-          }
-        }
-      }
-      
-      // 유튜브 URL 처리
-      const m = text.match(YT_URL_RE);
-      if (!m) return;
-      setTimeout(() => {
-        const html = ed.getHTML();
-        const replaced = html.replace(
-          /<p>(https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)[^<\s]+)<\/p>/i,
-          () => makeIframeHTML(m[1])
-        );
-        if (replaced !== html) ed.setHTML(replaced);
-      }, 0);
-    });
-
-    // 변경 감지 (직접 타이핑한 URL도 커버)
-    const onChange = (() => {
-      let t;
-      return () => {
-        clearTimeout(t);
-        t = setTimeout(() => {
-          const html = ed.getHTML();
-          const replaced = html.replace(
-            /<p>(https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)[^<\s]+)<\/p>/ig,
-            (whole, url) => {
-              const m = url.match(YT_URL_RE);
-              return m ? makeIframeHTML(m[1]) : whole;
-            }
-          );
-          if (replaced !== html) ed.setHTML(replaced);
-        }, 250);
-      };
-    })();
-    ed.on('change', () => {
-      onChange();
-      const content = ed.getHTML();
-      setFormData(prev => ({ ...prev, content }));
-    });
-
-    // 에디터 포커스 관리
-    const editorElement = el.querySelector('.toastui-editor-ww-mode') || el;
-    const handleEditorFocus = () => {
-      const root = document.getElementById('root');
-      if (root) {
-        root.removeAttribute('aria-hidden');
-      }
-    };
-
-    editorElement.addEventListener('focus', handleEditorFocus);
-
-    editorRef.current = ed;
-  };
-
-  // ToastUI Editor 스크립트 로드
-  useEffect(() => {
-    const ensureToastUI = async () => {
-      if (window.toastui?.Editor) {
-        return;
-      }
-      
-      try {
-        await loadScript('https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js');
-        await loadScript('https://uicdn.toast.com/editor/latest/i18n/ko-kr.js');
-        await loadCss('https://uicdn.toast.com/editor/latest/toastui-editor.min.css');
-      } catch (error) {
-        console.error('ToastUI Editor 로드 실패:', error);
-      }
-    };
-
-    ensureToastUI();
-
-    // 컴포넌트 언마운트 시 에디터 정리
-    return () => {
-      if (editorRef.current) {
-        try {
-          editorRef.current.destroy();
-        } catch (e) {
-          // ignore
-        }
-        editorRef.current = null;
-      }
-    };
-  }, []);
-
-  // 폼 데이터 초기화 및 에디터 초기화/내용 설정
+  // 폼 데이터 초기화
   useEffect(() => {
     if (!notice) return;
-
     const content = notice.content || '';
+    editorContentRef.current = content;
     setFormData({
       title: notice.title || '',
       content: content,
@@ -327,27 +89,6 @@ const NoticeEditPage = () => {
       attachment_file: notice.attachment_file || '',
       web_view_link: notice.web_view_link || ''
     });
-
-    // ToastUI Editor가 로드되었는지 확인하고 에디터 초기화/내용 설정
-    const initializeEditor = () => {
-      if (!window.toastui?.Editor) {
-        // Editor가 아직 로드되지 않았으면 잠시 후 다시 시도
-        setTimeout(initializeEditor, 100);
-        return;
-      }
-
-      // 에디터가 이미 초기화되어 있으면 내용만 설정
-      if (editorRef.current) {
-        editorRef.current.setHTML(content);
-      } else {
-        // 에디터가 아직 초기화되지 않았으면 초기화하면서 초기 내용 설정
-        setTimeout(() => {
-          initEditor(content);
-        }, 100);
-      }
-    };
-
-    initializeEditor();
   }, [notice]);
 
   // 공지사항 수정 mutation
@@ -442,7 +183,7 @@ const NoticeEditPage = () => {
     }
     
     // 에디터에서 콘텐츠 가져오기
-    const content = editorRef.current ? editorRef.current.getHTML() : formData.content;
+    const content = editorRef.current?.getHTML?.() ?? editorContentRef.current ?? formData.content;
     if (!content || content.trim() === '' || content.trim() === '<p><br></p>') {
       newErrors.content = '내용을 입력해주세요.';
     }
@@ -563,13 +304,16 @@ const NoticeEditPage = () => {
                 <Typography variant="subtitle2" gutterBottom sx={{ mb: 2 }}>
                   내용 <span style={{ color: 'red' }}>*</span>
                 </Typography>
-                <Box
-                  id="notice-editor"
-                  sx={{
-                    border: '1px solid #e5e7eb',
-                    borderRadius: 1,
-                    minHeight: '600px'
+                <TipTapEditor
+                  editorRef={editorRef}
+                  initialValue={formData.content}
+                  onChange={(html) => {
+                    editorContentRef.current = html;
+                    setFormData(prev => ({ ...prev, content: html }));
                   }}
+                  placeholder="내용을 입력하세요"
+                  height={600}
+                  onImageUpload={handleImageUpload}
                 />
                 {errors.content && (
                   <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>

@@ -18,7 +18,6 @@ import {
   DialogActions,
   DialogContentText
 } from '@mui/material';
-import '@toast-ui/editor/dist/toastui-editor.css';
 import { adminNoticesApi } from '../../lib/api/admin';
 import MainCard from '../../components/MainCard';
 import { 
@@ -180,7 +179,7 @@ const NoticeDetailPage = () => {
             {/* 내용 */}
             <Box
               sx={{
-                '& .toastui-editor-contents': {
+                '& .rich-content': {
                   fontFamily: "'Pretendard', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'",
                   fontSize: '16px',
                   lineHeight: 1.8,
@@ -188,7 +187,7 @@ const NoticeDetailPage = () => {
                   maxWidth: 'none',
                 },
                 // 제목 스타일
-                '& .toastui-editor-contents h1, & .toastui-editor-contents h2, & .toastui-editor-contents h3, & .toastui-editor-contents h4, & .toastui-editor-contents h5, & .toastui-editor-contents h6': {
+                '& .rich-content h1, & .rich-content h2, & .rich-content h3, & .rich-content h4, & .rich-content h5, & .rich-content h6': {
                   marginTop: '2em',
                   marginBottom: '1em',
                   fontWeight: 700,
@@ -197,41 +196,41 @@ const NoticeDetailPage = () => {
                   borderBottom: 'none !important',
                 },
                 // 첫 번째 제목의 margin-top 조정
-                '& .toastui-editor-contents h1:first-child, & .toastui-editor-contents h2:first-child, & .toastui-editor-contents h3:first-child, & .toastui-editor-contents h4:first-child, & .toastui-editor-contents h5:first-child, & .toastui-editor-contents h6:first-child': {
+                '& .rich-content h1:first-child, & .rich-content h2:first-child, & .rich-content h3:first-child, & .rich-content h4:first-child, & .rich-content h5:first-child, & .rich-content h6:first-child': {
                   marginTop: '0.5em',
                 },
-                '& .toastui-editor-contents h1': {
+                '& .rich-content h1': {
                   fontSize: '2em',
                 },
-                '& .toastui-editor-contents h2': {
+                '& .rich-content h2': {
                   fontSize: '1.5em',
                 },
-                '& .toastui-editor-contents h3': {
+                '& .rich-content h3': {
                   fontSize: '1.25em',
                 },
                 // 단락 스타일
-                '& .toastui-editor-contents p': {
+                '& .rich-content p': {
                   margin: '1.2em 0',
                   color: '#2E3140',
                 },
-                '& .toastui-editor-contents p:first-child': {
+                '& .rich-content p:first-child': {
                   marginTop: '0.5em',
                 },
                 // 이미지 스타일
-                '& .toastui-editor-contents img': {
+                '& .rich-content img': {
                   maxWidth: '100%',
                   height: 'auto',
                   borderRadius: '8px',
                   margin: '2em 0',
                 },
                 // iframe 스타일 (YouTube 임베드)
-                '& .toastui-editor-contents iframe': {
+                '& .rich-content iframe': {
                   maxWidth: '100%',
                   margin: '2em 0',
                   borderRadius: '8px',
                 },
                 // 인용구 스타일
-                '& .toastui-editor-contents blockquote': {
+                '& .rich-content blockquote': {
                   borderLeft: '4px solid',
                   borderColor: 'primary.main',
                   backgroundColor: '#f8f9fa',
@@ -241,14 +240,14 @@ const NoticeDetailPage = () => {
                   borderRadius: '4px',
                 },
                 // 코드 스타일
-                '& .toastui-editor-contents code': {
+                '& .rich-content code': {
                   backgroundColor: '#f1f3f4',
                   color: '#e83e8c',
                   padding: '0.2em 0.4em',
                   borderRadius: '3px',
                   fontSize: '0.9em',
                 },
-                '& .toastui-editor-contents pre': {
+                '& .rich-content pre': {
                   backgroundColor: '#f8f9fa',
                   color: '#2E3140',
                   padding: '1.5em',
@@ -256,28 +255,28 @@ const NoticeDetailPage = () => {
                   overflowX: 'auto',
                   margin: '2em 0',
                 },
-                '& .toastui-editor-contents pre code': {
+                '& .rich-content pre code': {
                   backgroundColor: 'transparent',
                   color: 'inherit',
                   padding: 0,
                 },
                 // 테이블 스타일
-                '& .toastui-editor-contents table': {
+                '& .rich-content table': {
                   width: '100%',
                   borderCollapse: 'collapse',
                   margin: '2em 0',
                 },
-                '& .toastui-editor-contents table th, & .toastui-editor-contents table td': {
+                '& .rich-content table th, & .rich-content table td': {
                   border: '1px solid #e2e8f0',
                   padding: '12px',
                 },
-                '& .toastui-editor-contents table th': {
+                '& .rich-content table th': {
                   backgroundColor: '#f8f9fa',
                   color: '#2E3140',
                   fontWeight: 600,
                 },
                 // 링크 스타일
-                '& .toastui-editor-contents a': {
+                '& .rich-content a': {
                   color: 'primary.main',
                   textDecoration: 'underline',
                   '&:hover': {
@@ -285,28 +284,28 @@ const NoticeDetailPage = () => {
                   },
                 },
                 // 리스트 스타일
-                '& .toastui-editor-contents ul, & .toastui-editor-contents ol': {
+                '& .rich-content ul, & .rich-content ol': {
                   margin: '1.2em 0',
                   paddingLeft: '2em',
                 },
-                '& .toastui-editor-contents li': {
+                '& .rich-content li': {
                   margin: '0.5em 0',
                   color: '#2E3140',
                 },
                 // 강조 스타일
-                '& .toastui-editor-contents strong': {
+                '& .rich-content strong': {
                   fontWeight: 600,
                   color: '#2E3140',
                 },
                 // 기울임꼴
-                '& .toastui-editor-contents em': {
+                '& .rich-content em': {
                   fontStyle: 'italic',
                   color: '#2E3140',
                 },
               }}
             >
               <Box
-                className="toastui-editor-contents"
+                className="rich-content"
                 component="div"
                 dangerouslySetInnerHTML={{ __html: notice.content }}
               />
