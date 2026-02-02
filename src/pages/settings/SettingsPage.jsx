@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSnackbar } from '../../contexts/SnackbarContext';
 import {
   Box,
@@ -13,97 +13,9 @@ import {
   Paper,
   CircularProgress,
 } from '@mui/material';
-import '@toast-ui/editor/dist/toastui-editor.css';
-import { Editor } from '@toast-ui/react-editor';
 import { useMutation } from '@tanstack/react-query';
-import { adminSettingsApi, uploadApi } from '../../lib/api/admin';
-
-// ToastUI 에디터 컴포넌트
-function ToastUIEditor({
-  placeholder = "내용을 입력해주세요.",
-  onChange,
-  initialValue = ""
-}) {
-  const editorRef = React.useRef(null);
-  const [isEditorFocused, setIsEditorFocused] = React.useState(false);
-
-  const handleChange = () => {
-    if (editorRef.current) {
-      const content = editorRef.current.getInstance().getHTML();
-      onChange(content);
-    }
-  };
-
-  // 이미지 업로드 핸들러
-  const handleImageUpload = (file, callback) => {
-    // 이미지 파일을 Base64로 변환
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result;
-      callback(result, file.name);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // 에디터 포커스 관리
-  const handleEditorFocus = () => {
-    setIsEditorFocused(true);
-    // 에디터가 포커스를 받을 때 root의 aria-hidden 제거
-    const root = document.getElementById('root');
-    if (root) {
-      root.removeAttribute('aria-hidden');
-    }
-  };
-
-  const handleEditorBlur = () => {
-    setIsEditorFocused(false);
-  };
-
-  // 에디터 마운트 시 포커스 이벤트 리스너 추가
-  React.useEffect(() => {
-    const editorElement = editorRef.current?.getRootElement();
-    if (editorElement) {
-      editorElement.addEventListener('focus', handleEditorFocus);
-      editorElement.addEventListener('blur', handleEditorBlur);
-      
-      return () => {
-        editorElement.removeEventListener('focus', handleEditorFocus);
-        editorElement.removeEventListener('blur', handleEditorBlur);
-      };
-    }
-  }, []);
-
-  return (
-    <div 
-      style={{ border: "1px solid #e5e7eb", borderRadius: 8 }}
-      aria-label="텍스트 편집기"
-      role="textbox"
-      tabIndex={-1}
-    >
-      <Editor
-        ref={editorRef}
-        initialValue={initialValue}
-        placeholder={placeholder}
-        previewStyle="vertical"
-        height="400px"
-        initialEditType="wysiwyg"
-        useCommandShortcut={true}
-        onChange={handleChange}
-        hooks={{
-          addImageBlobHook: handleImageUpload
-        }}
-        toolbarItems={[
-          ['heading', 'bold', 'italic', 'strike'],
-          ['hr', 'quote'],
-          ['ul', 'ol', 'task', 'indent', 'outdent'],
-          ['table', 'image', 'link'],
-          ['code', 'codeblock'],
-          ['scrollSync'],
-        ]}
-      />
-    </div>
-  );
-}
+import { adminSettingsApi } from '../../lib/api/admin';
+import { TipTapEditor } from '../../components/RichTextEditor';
 
 // Tab Panel 컴포넌트 - 조건부 렌더링으로 변경
 function TabPanel({ children, value, index, ...other }) {
@@ -165,13 +77,6 @@ const SettingsPage = () => {
   // 관리자 정보 (localStorage에서 가져오기)
   const admin = JSON.parse(localStorage.getItem('admin') || '{}');
 
-  // ToastUI 에디터 ref (각 약관별로 사용)
-  const editorRefs = useRef({
-    service: null,
-    privacy: null,
-    collection: null,
-    marketing: null,
-  });
 
   // 약관 데이터 로드 함수
   const loadTermsData = async () => {
@@ -439,12 +344,11 @@ const SettingsPage = () => {
                   <Typography variant="subtitle2" gutterBottom sx={{ mb: 2 }}>
                     내용
                   </Typography>
-                  <ToastUIEditor
+                  <TipTapEditor
                     placeholder="약관 내용을 입력해주세요..."
                     initialValue={termsData[type].content}
-                    onChange={(content) => {
-                      handleTermsContentChange(type)(content);
-                    }}
+                    onChange={(content) => handleTermsContentChange(type)(content)}
+                    height={400}
                   />
                 </Box>
 
