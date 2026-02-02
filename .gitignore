@@ -13,7 +13,6 @@ downloads/
 eggs/
 .eggs/
 # Python lib 폴더만 무시 (앱별 src/lib은 제외)
-lib/
 lib64/
 # 앱별 src/lib 폴더는 추적 (예외 처리)
 !apps/**/src/lib/
