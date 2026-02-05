@@ -160,20 +160,20 @@ export const adminDashboardApi = {
     }
   },
 
-  // 알림 읽음 처리
+  // 알림 읽음 처리 (백엔드 PUT 사용)
   markNotificationAsRead: async (notificationId) => {
     try {
-      const response = await apiClient.patch(`/admin/notifications/${notificationId}/read`);
+      const response = await apiClient.put(`/admin/notifications/${notificationId}/read`);
       return response.data;
     } catch (error) {
       throw handleApiError(error);
     }
   },
 
-  // 모든 알림 읽음 처리
+  // 모든 알림 읽음 처리 (백엔드 PUT 사용)
   markAllNotificationsAsRead: async () => {
     try {
-      const response = await apiClient.patch('/admin/notifications/read-all');
+      const response = await apiClient.put('/admin/notifications/read-all');
       return response.data;
     } catch (error) {
       throw handleApiError(error);
@@ -524,6 +524,72 @@ export const adminFAQApi = {
   }
 };
 
+// 1:1 문의 관리 API
+export const adminInquiriesApi = {
+  getInquiries: async () => {
+    try {
+      const response = await apiClient.get('/admin/inquiries');
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  getInquiry: async (inquiryId) => {
+    try {
+      const response = await apiClient.get(`/admin/inquiries/${inquiryId}`);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  updateInquiryStatus: async (inquiryId, status) => {
+    try {
+      const response = await apiClient.put(`/admin/inquiries/${inquiryId}/status`, { status });
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  updateInquiry: async (inquiryId, data) => {
+    try {
+      const response = await apiClient.put(`/admin/inquiries/${inquiryId}`, data);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  createResponse: async (inquiryId, data) => {
+    try {
+      const response = await apiClient.post(`/admin/inquiries/${inquiryId}/responses`, data);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  updateResponse: async (inquiryId, responseId, data) => {
+    try {
+      const response = await apiClient.put(`/admin/inquiries/${inquiryId}/responses/${responseId}`, data);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  deleteResponse: async (inquiryId, responseId) => {
+    try {
+      const response = await apiClient.delete(`/admin/inquiries/${inquiryId}/responses/${responseId}`);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+};
+
 // 파일 업로드 API
 export const uploadApi = {
   // 파일 업로드
@@ -550,7 +616,7 @@ export const adminNoticesApi = {
   // 공지사항 목록 조회
   getNotices: async (params = {}) => {
     try {
-      const response = await apiClient.get('/notices', { params });
+      const response = await apiClient.get('/admin/notices', { params });
       return response.data;
     } catch (error) {
       throw handleApiError(error);
@@ -563,7 +629,7 @@ export const adminNoticesApi = {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await apiClient.post('/notices/upload', formData, {
+      const response = await apiClient.post('/admin/notices/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -577,7 +643,7 @@ export const adminNoticesApi = {
   // 공지사항 상세 조회
   getNotice: async (id) => {
     try {
-      const response = await apiClient.get(`/notices/${id}`);
+      const response = await apiClient.get(`/admin/notices/${id}`);
       return response.data;
     } catch (error) {
       throw handleApiError(error);
@@ -587,7 +653,7 @@ export const adminNoticesApi = {
   // 공지사항 생성
   createNotice: async (data) => {
     try {
-      const response = await apiClient.post('/notices', data);
+      const response = await apiClient.post('/admin/notices', data);
       return response.data;
     } catch (error) {
       throw handleApiError(error);
@@ -597,7 +663,7 @@ export const adminNoticesApi = {
   // 공지사항 수정
   updateNotice: async (id, data) => {
     try {
-      const response = await apiClient.put(`/notices/${id}`, data);
+      const response = await apiClient.put(`/admin/notices/${id}`, data);
       return response.data;
     } catch (error) {
       throw handleApiError(error);
@@ -607,7 +673,7 @@ export const adminNoticesApi = {
   // 공지사항 삭제
   deleteNotice: async (id) => {
     try {
-      const response = await apiClient.delete(`/notices/${id}`);
+      const response = await apiClient.delete(`/admin/notices/${id}`);
       return response.data;
     } catch (error) {
       throw handleApiError(error);
@@ -617,6 +683,7 @@ export const adminNoticesApi = {
   // 공지사항 타입 목록 조회
   getNoticeTypes: async () => {
     try {
+      // 타입 목록은 클라이언트 공지 API에 있음 (/api/v1/notices/types/)
       const response = await apiClient.get('/notices/types/');
       return response.data;
     } catch (error) {
@@ -690,10 +757,10 @@ export const adminSocialsApi = {
     }
   },
 
-  // 소셜 모임 참가자 목록 조회 (범용 API 사용)
+  // 소셜 모임 참가자 목록 조회 (관리자 API)
   getSocialParticipants: async (socialId) => {
     try {
-      const response = await apiClient.get(`/meetings/${socialId}/participants`);
+      const response = await apiClient.get(`/admin/meetings/${socialId}/participants`);
       return response.data;
     } catch (error) {
       throw handleApiError(error);
@@ -706,11 +773,27 @@ export const adminMeetingSettlementApi = {
   // 모임 정산 조회
   getMeetingSettlement: async (meetingId) => {
     try {
-      const response = await apiClient.get(`/meetings/${meetingId}/settlement`);
+      const response = await apiClient.get(`/admin/meetings/${meetingId}/settlement`);
       return response.data;
     } catch (error) {
       throw handleApiError(error);
     }
+  },
+
+  // 라운딩 정산 대상자(참가자) 목록 조회
+  getAvailableParticipants: async (meetingId) => {
+    try {
+      const response = await apiClient.get(`/admin/meetings/${meetingId}/settlement/available-participants`);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // 라운딩 정산 생성/수정
+  createRoundSettlement: async (meetingId, data) => {
+    const response = await apiClient.post(`/admin/meetings/${meetingId}/settlement/rounding`, data);
+    return response.data;
   }
 };
 

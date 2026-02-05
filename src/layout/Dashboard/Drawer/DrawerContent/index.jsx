@@ -14,7 +14,7 @@ import NavGroup from './Navigation/NavGroup';
 import NavItem from './Navigation/NavItem';
 
 // assets
-import { MdDashboard as DashboardOutlined, MdPerson as UserOutlined, MdGroup as TeamOutlined, MdCalendarToday as CalendarOutlined, MdSettings as SettingOutlined, MdChevronRight as SubMenuIcon, MdSupport as SupportOutlined, MdAnnouncement as AnnouncementOutlined, MdQuestionAnswer as QuestionAnswerOutlined } from 'react-icons/md';
+import { MdDashboard as DashboardOutlined, MdPerson as UserOutlined, MdGroup as TeamOutlined, MdCalendarToday as CalendarOutlined, MdSettings as SettingOutlined, MdChevronRight as SubMenuIcon, MdSupport as SupportOutlined, MdAnnouncement as AnnouncementOutlined, MdQuestionAnswer as QuestionAnswerOutlined, MdContactSupport as ContactSupportOutlined } from 'react-icons/md';
 
 // ==============================|| DRAWER - CONTENT ||============================== //
 
@@ -104,6 +104,13 @@ const menuItems = [
         type: 'item',
         url: '/faq',
         icon: QuestionAnswerOutlined
+      },
+      {
+        id: 'inquiry-list',
+        title: '1:1 문의 관리',
+        type: 'item',
+        url: '/inquiries',
+        icon: ContactSupportOutlined
       }
     ]
   },
@@ -148,6 +155,8 @@ export default function DrawerContent({ drawerOpen = true }) {
       setSelected('notice-list');
     } else if (path.startsWith('/faq')) {
       setSelected('faq-list');
+    } else if (path.startsWith('/inquiries')) {
+      setSelected('inquiry-list');
     } else if (path.startsWith('/settings')) {
       setSelected('settings');
     }

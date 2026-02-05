@@ -152,7 +152,7 @@ function TipTapEditor({
           minHeight: height,
           padding: 2,
           outline: 'none',
-          '& p.is-editor-empty:first-child::before': {
+          '& p.is-editor-empty:first-of-type::before': {
             content: `attr(data-placeholder)`,
             float: 'left',
             color: '#9ca3af',
