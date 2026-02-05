@@ -353,15 +353,6 @@ const ClubListPage = () => {
           <Stack direction="row" spacing={1}>
             <AnimateButton>
               <Button
-                variant="outlined"
-                onClick={() => navigate('/clubs/applications')}
-                size="large"
-              >
-                신청내역 관리
-              </Button>
-            </AnimateButton>
-            <AnimateButton>
-              <Button
                 variant="contained"
                 startIcon={<Plus />}
                 onClick={() => navigate('/clubs/create')}
