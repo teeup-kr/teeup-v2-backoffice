@@ -30,7 +30,7 @@ import {
   DialogActions,
   Button
 } from '@mui/material';
-import { MdVisibility as ViewIcon, MdFilterList as FilterIcon, MdSearch as SearchIcon, MdRefresh as RefreshIcon, MdNote as NoteIcon } from 'react-icons/md';
+import { MdVisibility as ViewIcon, MdEdit as EditIcon, MdAdd as AddIcon, MdFilterList as FilterIcon, MdSearch as SearchIcon, MdRefresh as RefreshIcon, MdNote as NoteIcon } from 'react-icons/md';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { adminRoundsApi } from '../../lib/api/admin';
@@ -180,6 +180,15 @@ const RoundListPage = () => {
               라운딩 모임 목록 및 관리
             </Typography>
           </Box>
+          <AnimateButton>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => navigate('/rounds/create')}
+            >
+              라운딩 생성
+            </Button>
+          </AnimateButton>
         </Stack>
       </MainCard>
 
@@ -332,14 +341,21 @@ const RoundListPage = () => {
                         </Tooltip>
                       </TableCell>
                       <TableCell align="center">
-                        <Tooltip title="상세보기">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleViewRound(round.id)}
-                          >
-                            <ViewIcon />
-                          </IconButton>
-                        </Tooltip>
+                        <Stack direction="row" spacing={0.5} justifyContent="center">
+                          <Tooltip title="상세보기">
+                            <IconButton size="small" onClick={() => handleViewRound(round.id)}>
+                              <ViewIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="수정">
+                            <IconButton
+                              size="small"
+                              onClick={() => navigate(`/rounds/${round.id}/edit`)}
+                            >
+                              <EditIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
                       </TableCell>
                     </TableRow>
                   ))
@@ -347,7 +363,7 @@ const RoundListPage = () => {
               </TableBody>
             </Table>
           </TableContainer>
-          
+
           {/* 페이지네이션 */}
           <TablePagination
             component="div"
@@ -358,7 +374,7 @@ const RoundListPage = () => {
             onRowsPerPageChange={handleChangeRowsPerPage}
             rowsPerPageOptions={[5, 10, 25, 50]}
             labelRowsPerPage="페이지당 행수"
-            labelDisplayedRows={({ from, to, count }) => 
+            labelDisplayedRows={({ from, to, count }) =>
               `${from}-${to} / ${count !== -1 ? count : `${to}개 이상`}`
             }
             showFirstButton

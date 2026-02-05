@@ -13,13 +13,13 @@ import {
   Card,
   CardContent,
   Avatar,
-  Paper
+  Paper,
+  Stack
 } from '@mui/material';
-import { MdArrowBack as ArrowLeft, MdPerson as PersonIcon } from 'react-icons/md';
+import { MdArrowBack as ArrowLeft, MdPerson as PersonIcon, MdEdit as EditIcon, MdTrendingUp as StatsIcon, MdAttachMoney as ExpenseIcon, MdScore as ScoreIcon, MdGroup as TeamIcon } from 'react-icons/md';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { adminRoundsApi, adminMeetingSettlementApi, adminClientTokenApi, getClientUrl } from '../../lib/api/admin';
-import { MdOpenInNew as OpenInNewIcon } from 'react-icons/md';
+import { adminRoundsApi, adminMeetingSettlementApi } from '../../lib/api/admin';
 
 const RoundDetailPage = () => {
   const { id } = useParams();
@@ -179,24 +179,23 @@ const RoundDetailPage = () => {
             sx={{ ml: 2 }}
           />
         </Box>
-        <Button
-          variant="outlined"
-          startIcon={<OpenInNewIcon />}
-          onClick={async () => {
-            try {
-              // 임시 토큰 생성
-              const tokenData = await adminClientTokenApi.generateClientToken();
-              const clientUrl = getClientUrl();
-              const url = `${clientUrl}/meetings/rounding/${id}?admin_token=${tokenData.temp_token}`;
-              window.open(url, '_blank');
-            } catch (error) {
-              console.error('클라이언트 토큰 생성 실패:', error);
-              alert('클라이언트 페이지를 열 수 없습니다. 다시 시도해주세요.');
-            }
-          }}
-        >
-          클라이언트 페이지 보기
-        </Button>
+        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+          <Button variant="outlined" startIcon={<EditIcon />} onClick={() => navigate(`/rounds/${id}/edit`)}>
+            수정
+          </Button>
+          <Button variant="outlined" startIcon={<StatsIcon />} onClick={() => navigate(`/rounds/${id}/stats`)}>
+            통계
+          </Button>
+          <Button variant="outlined" startIcon={<ExpenseIcon />} onClick={() => navigate(`/rounds/${id}/expenses`)}>
+            정산 관리
+          </Button>
+          <Button variant="outlined" startIcon={<ScoreIcon />} onClick={() => navigate(`/rounds/${id}/scores`)}>
+            점수 관리
+          </Button>
+          <Button variant="outlined" startIcon={<TeamIcon />} onClick={() => navigate(`/rounds/${id}/teams`)}>
+            팀 관리
+          </Button>
+        </Stack>
       </Box>
 
       <Grid container spacing={3} direction="column">

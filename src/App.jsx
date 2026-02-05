@@ -49,23 +49,22 @@ import ClubFeesPage from './pages/clubs/ClubFeesPage';
 import ClubApplicationsPage from './pages/clubs/ClubApplicationsPage';
 import ClubApplicationDetailPage from './pages/clubs/ClubApplicationDetailPage';
 
-// Meeting management pages
-import MeetingListPage from './pages/meetings/MeetingListPage';
-import MeetingDetailPage from './pages/meetings/MeetingDetailPage';
-import MeetingCreatePage from './pages/meetings/MeetingCreatePage';
-import MeetingEditPage from './pages/meetings/MeetingEditPage';
-import MeetingStatsPage from './pages/meetings/MeetingStatsPage';
-import ExpenseManagementPage from './pages/meetings/ExpenseManagementPage';
-import ScoreManagementPage from './pages/meetings/ScoreManagementPage';
-import TeamManagementPage from './pages/meetings/TeamManagementPage';
-
 // Rounding management pages
 import RoundListPage from './pages/rounds/RoundListPage';
 import RoundDetailPage from './pages/rounds/RoundDetailPage';
+import RoundCreatePage from './pages/rounds/RoundCreatePage';
+import RoundEditPage from './pages/rounds/RoundEditPage';
+import RoundStatsPage from './pages/rounds/RoundStatsPage';
+import RoundExpenseManagementPage from './pages/rounds/RoundExpenseManagementPage';
+import RoundScoreManagementPage from './pages/rounds/RoundScoreManagementPage';
+import RoundTeamManagementPage from './pages/rounds/RoundTeamManagementPage';
 
 // Social management pages
 import SocialListPage from './pages/socials/SocialListPage';
 import SocialDetailPage from './pages/socials/SocialDetailPage';
+import SocialCreatePage from './pages/socials/SocialCreatePage';
+import SocialEditPage from './pages/socials/SocialEditPage';
+import SocialExpenseManagementPage from './pages/socials/SocialExpenseManagementPage';
 
 // Other pages
 import NotificationsPage from './pages/notifications/NotificationsPage';
@@ -82,6 +81,10 @@ import FAQListPage from './pages/faq/FAQListPage';
 import FAQCreatePage from './pages/faq/FAQCreatePage';
 import FAQDetailPage from './pages/faq/FAQDetailPage';
 import FAQEditPage from './pages/faq/FAQEditPage';
+
+// Inquiry management pages
+import InquiryListPage from './pages/inquiries/InquiryListPage';
+import InquiryDetailPage from './pages/inquiries/InquiryDetailPage';
 
 // Layout
 import DashboardLayout from './layout/Dashboard';
@@ -143,23 +146,26 @@ function App() {
             <Route path="clubs/applications" element={<ClubApplicationsPage />} />
             <Route path="clubs/applications/:id" element={<ClubApplicationDetailPage />} />
 
-            {/* Meeting management */}
-            <Route path="meetings" element={<MeetingListPage />} />
-            <Route path="meetings/create" element={<MeetingCreatePage />} />
-            <Route path="meetings/:id" element={<MeetingDetailPage />} />
-            <Route path="meetings/:id/edit" element={<MeetingEditPage />} />
-            <Route path="meetings/:id/stats" element={<MeetingStatsPage />} />
-            <Route path="meetings/:id/expenses" element={<ExpenseManagementPage />} />
-            <Route path="meetings/:id/scores" element={<ScoreManagementPage />} />
-            <Route path="meetings/:id/teams" element={<TeamManagementPage />} />
+            {/* /meetings 접근 시 라운딩으로 리다이렉트 */}
+            <Route path="meetings" element={<Navigate to="/rounds" replace />} />
+            <Route path="meetings/*" element={<Navigate to="/rounds" replace />} />
 
             {/* Rounding management */}
             <Route path="rounds" element={<RoundListPage />} />
+            <Route path="rounds/create" element={<RoundCreatePage />} />
             <Route path="rounds/:id" element={<RoundDetailPage />} />
+            <Route path="rounds/:id/edit" element={<RoundEditPage />} />
+            <Route path="rounds/:id/stats" element={<RoundStatsPage />} />
+            <Route path="rounds/:id/expenses" element={<RoundExpenseManagementPage />} />
+            <Route path="rounds/:id/scores" element={<RoundScoreManagementPage />} />
+            <Route path="rounds/:id/teams" element={<RoundTeamManagementPage />} />
 
             {/* Social management */}
             <Route path="socials" element={<SocialListPage />} />
+            <Route path="socials/create" element={<SocialCreatePage />} />
             <Route path="socials/:id" element={<SocialDetailPage />} />
+            <Route path="socials/:id/edit" element={<SocialEditPage />} />
+            <Route path="socials/:id/expenses" element={<SocialExpenseManagementPage />} />
 
             {/* Notice management */}
             <Route path="notices" element={<NoticeListPage />} />
@@ -172,6 +178,10 @@ function App() {
             <Route path="faq/new" element={<FAQCreatePage />} />
             <Route path="faq/:id" element={<FAQDetailPage />} />
             <Route path="faq/:id/edit" element={<FAQEditPage />} />
+
+            {/* Inquiry management */}
+            <Route path="inquiries" element={<InquiryListPage />} />
+            <Route path="inquiries/:id" element={<InquiryDetailPage />} />
 
             {/* Other pages */}
             <Route path="notifications" element={<NotificationsPage />} />

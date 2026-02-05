@@ -30,7 +30,7 @@ import {
   DialogActions,
   Button
 } from '@mui/material';
-import { MdVisibility as ViewIcon, MdFilterList as FilterIcon, MdSearch as SearchIcon, MdRefresh as RefreshIcon, MdNote as NoteIcon } from 'react-icons/md';
+import { MdVisibility as ViewIcon, MdEdit as EditIcon, MdAdd as AddIcon, MdFilterList as FilterIcon, MdSearch as SearchIcon, MdRefresh as RefreshIcon, MdNote as NoteIcon } from 'react-icons/md';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { adminSocialsApi } from '../../lib/api/admin';
@@ -180,6 +180,15 @@ const SocialListPage = () => {
               소셜 모임 목록 및 관리
             </Typography>
           </Box>
+          <AnimateButton>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => navigate('/meetings/create?type=SOCIAL')}
+            >
+              소셜 모임 생성
+            </Button>
+          </AnimateButton>
         </Stack>
       </MainCard>
 
@@ -326,14 +335,21 @@ const SocialListPage = () => {
                         </Tooltip>
                       </TableCell>
                       <TableCell align="center">
-                        <Tooltip title="상세보기">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleViewSocial(social.id)}
-                          >
-                            <ViewIcon />
-                          </IconButton>
-                        </Tooltip>
+                        <Stack direction="row" spacing={0.5} justifyContent="center">
+                          <Tooltip title="상세보기">
+                            <IconButton size="small" onClick={() => handleViewSocial(social.id)}>
+                              <ViewIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="수정">
+                            <IconButton
+                              size="small"
+                              onClick={() => navigate(`/socials/${social.id}/edit`)}
+                            >
+                              <EditIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
                       </TableCell>
                     </TableRow>
                   ))
@@ -341,7 +357,7 @@ const SocialListPage = () => {
               </TableBody>
             </Table>
           </TableContainer>
-          
+
           {/* 페이지네이션 */}
           <TablePagination
             component="div"
