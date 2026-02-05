@@ -149,7 +149,7 @@ const FAQEditPage = () => {
               <MenuItem value="">카테고리를 선택하세요</MenuItem>
               {categories.map((cat) => (
                 <MenuItem key={cat.id} value={String(cat.id)}>
-                  {cat.name}
+                  {cat.title ?? cat.name}
                 </MenuItem>
               ))}
             </Select>

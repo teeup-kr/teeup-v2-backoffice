@@ -74,16 +74,16 @@ const CategoryModal = ({ open, onClose, onCategoryChanged }) => {
     if (editingCategory) {
       updateMutation.mutate({
         id: editingCategory.id,
-        data: { name: name.trim(), order },
+        data: { title: name.trim(), order },
       });
     } else {
-      createMutation.mutate({ name: name.trim(), order, is_active: true });
+      createMutation.mutate({ title: name.trim(), order, is_active: true });
     }
   };
 
   const handleEdit = (cat) => {
     setEditingCategory(cat);
-    setName(cat.name);
+    setName(cat.title ?? cat.name ?? '');
     setOrder(cat.order);
   };
 
@@ -191,7 +191,7 @@ const CategoryModal = ({ open, onClose, onCategoryChanged }) => {
                   }}
                 >
                   <Stack direction="row" spacing={2} alignItems="center">
-                    <Typography variant="body1">{cat.name}</Typography>
+                    <Typography variant="body1">{cat.title ?? cat.name}</Typography>
                     {cat.is_active ? (
                       <Chip label="활성" size="small" color="success" />
                     ) : (

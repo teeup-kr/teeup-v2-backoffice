@@ -284,7 +284,7 @@ const FAQListPage = () => {
                 <MenuItem value="">전체 카테고리</MenuItem>
                 {categories.map((cat) => (
                   <MenuItem key={cat.id} value={String(cat.id)}>
-                    {cat.name}
+                    {cat.title ?? cat.name}
                   </MenuItem>
                 ))}
               </Select>
@@ -371,9 +371,9 @@ const FAQListPage = () => {
                   <TableRow key={faq.id} hover>
                     <TableCell>{page * rowsPerPage + idx + 1}</TableCell>
                     <TableCell>
-                      {faq.category_name ? (
+                      {(faq.category_title ?? faq.category_name) ? (
                         <Chip
-                          label={faq.category_name}
+                          label={faq.category_title ?? faq.category_name}
                           size="small"
                           color="primary"
                           variant="outlined"
