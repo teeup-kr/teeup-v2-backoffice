@@ -21,6 +21,7 @@ import {
   Divider
 } from '@mui/material';
 import { clubsApi } from '../../lib/api/clubs';
+import { regionApi } from '../../lib/api/region';
 import MainCard from '../../components/MainCard';
 import AnimateButton from '../../components/@extended/AnimateButton';
 import ExtendedAvatar from '../../components/@extended/Avatar';
@@ -36,7 +37,8 @@ const ClubEditPage = () => {
     description: '',
     type: 'REGULAR',
     member_count: 0,
-    location: '',
+    sido_code: '',
+    gungu_codes: [],
     contact_info: '',
     additional_info: '',
     status: 'ACTIVE',
@@ -83,6 +85,31 @@ const ClubEditPage = () => {
     }
   });
 
+  // 시도/군구 목록
+  const { data: sidoList = [] } = useQuery({
+    queryKey: ['region-sido'],
+    queryFn: () => regionApi.getSidoList(),
+  });
+  const { data: gunguList = [], isLoading: gunguLoading } = useQuery({
+    queryKey: ['region-gungu', formData.sido_code],
+    queryFn: () => regionApi.getGunguList(formData.sido_code),
+    enabled: !!formData.sido_code,
+  });
+
+  const handleSidoChange = (event) => {
+    const code = event.target.value;
+    setFormData((prev) => ({ ...prev, sido_code: code, gungu_codes: [] }));
+  };
+  const handleGunguToggle = (code) => {
+    setFormData((prev) => {
+      const current = prev.gungu_codes || [];
+      const exists = current.includes(code);
+      if (exists) return { ...prev, gungu_codes: current.filter((c) => c !== code) };
+      if (current.length >= 4) return prev;
+      return { ...prev, gungu_codes: [...current, code] };
+    });
+  };
+
   // 클럽 데이터 로드 및 초기화
   useEffect(() => {
     if (club) {
@@ -91,7 +118,8 @@ const ClubEditPage = () => {
         description: club.description || '',
         type: club.type || 'REGULAR',
         member_count: club.member_count || 0,
-        location: club.location || '',
+        sido_code: club.sido_code || '',
+        gungu_codes: club.gungu_codes || [],
         contact_info: club.contact_info || '',
         additional_info: club.additional_info || '',
         status: club.status || 'ACTIVE',
@@ -145,6 +173,10 @@ const ClubEditPage = () => {
     
     if (formData.member_count <= 0) {
       newErrors.member_count = '멤버 수는 1명 이상이어야 합니다.';
+    }
+    
+    if (formData.sido_code && (!formData.gungu_codes?.length || formData.gungu_codes.length > 4)) {
+      newErrors.gungu_codes = '군구를 1~4개 선택해주세요.';
     }
     
     setErrors(newErrors);
@@ -308,12 +340,40 @@ const ClubEditPage = () => {
                     </Grid>
                   </Grid>
                   
-                  <TextField
-                    fullWidth
-                    label="활동 지역"
-                    value={formData.location}
-                    onChange={handleInputChange('location')}
-                  />
+                  <FormControl fullWidth sx={{ mb: 1 }}>
+                    <InputLabel>시도</InputLabel>
+                    <Select
+                      value={formData.sido_code}
+                      onChange={handleSidoChange}
+                      label="시도"
+                    >
+                      <MenuItem value=""><em>선택</em></MenuItem>
+                      {sidoList.map((s) => (
+                        <MenuItem key={s.code} value={s.code}>{s.name}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ mb: 1 }}>군구 (1~4개 선택)</Typography>
+                    {!formData.sido_code ? (
+                      <Typography variant="body2" color="text.secondary">시도를 먼저 선택해주세요.</Typography>
+                    ) : gunguLoading ? (
+                      <CircularProgress size={24} />
+                    ) : (
+                      <Stack direction="row" flexWrap="wrap" gap={1}>
+                        {gunguList.map((g) => (
+                          <Chip
+                            key={g.code}
+                            label={g.name}
+                            onClick={() => handleGunguToggle(g.code)}
+                            color={formData.gungu_codes?.includes(g.code) ? 'primary' : 'default'}
+                            variant={formData.gungu_codes?.includes(g.code) ? 'filled' : 'outlined'}
+                            sx={{ cursor: 'pointer' }}
+                          />
+                        ))}
+                      </Stack>
+                    )}
+                  </Box>
                   
                   <TextField
                     fullWidth
