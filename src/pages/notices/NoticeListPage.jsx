@@ -109,7 +109,7 @@ const NoticeListPage = () => {
     }
   });
 
-  const notices = Array.isArray(noticesData?.notices) ? noticesData.notices : [];
+  const notices = Array.isArray(noticesData?.data) ? noticesData.data : [];
   const total = noticesData?.total || 0;
 
   // 카테고리 한글 변환
