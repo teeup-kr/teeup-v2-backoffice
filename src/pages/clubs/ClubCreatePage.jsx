@@ -32,6 +32,7 @@ import {
   Pagination
 } from '@mui/material';
 import { clubsApi } from '../../lib/api/clubs';
+import { regionApi } from '../../lib/api/region';
 import apiClient from '../../lib/api/apiClient';
 import MainCard from '../../components/MainCard';
 import AnimateButton from '../../components/@extended/AnimateButton';
@@ -47,7 +48,8 @@ const ClubCreatePage = () => {
     description: '',
     type: 'REGULAR',
     member_count: 0,
-    location: '',
+    sido_code: '',
+    gungu_codes: [],
     contact_info: '',
     additional_info: '',
     attachment_file: '',
@@ -71,6 +73,44 @@ const ClubCreatePage = () => {
   
   // 유효성 검사 에러 상태
   const [errors, setErrors] = useState({});
+
+  // 시도/군구 목록
+  const { data: sidoList = [] } = useQuery({
+    queryKey: ['region-sido'],
+    queryFn: () => regionApi.getSidoList(),
+  });
+  const { data: gunguList = [], isLoading: gunguLoading } = useQuery({
+    queryKey: ['region-gungu', formData.sido_code],
+    queryFn: () => regionApi.getGunguList(formData.sido_code),
+    enabled: !!formData.sido_code,
+  });
+
+  // 시도 변경 시 군구 초기화
+  const handleSidoChange = (event) => {
+    const code = event.target.value;
+    setFormData((prev) => ({ ...prev, sido_code: code, gungu_codes: [] }));
+    if (errors.sido_code || errors.gungu_codes) {
+      setErrors((prev) => ({ ...prev, sido_code: '', gungu_codes: '' }));
+    }
+  };
+
+  // 군구 다중 선택 (최대 4개)
+  const handleGunguToggle = (code) => {
+    setFormData((prev) => {
+      const current = prev.gungu_codes || [];
+      const exists = current.includes(code);
+      let next;
+      if (exists) {
+        next = current.filter((c) => c !== code);
+      } else if (current.length < 4) {
+        next = [...current, code];
+      } else {
+        return prev;
+      }
+      return { ...prev, gungu_codes: next };
+    });
+    if (errors.gungu_codes) setErrors((prev) => ({ ...prev, gungu_codes: '' }));
+  };
 
   // 사용자 검색
   const {
@@ -185,9 +225,14 @@ const ClubCreatePage = () => {
       newErrors.description = '클럽 설명은 10자 이상 입력해주세요.';
     }
     
-    // 위치 검증
-    if (!formData.location.trim()) {
-      newErrors.location = '위치를 입력해주세요.';
+    // 활동 지역 검증 (시도/군구)
+    if (!formData.sido_code) {
+      newErrors.sido_code = '시도를 선택해주세요.';
+    }
+    if (!formData.gungu_codes?.length || formData.gungu_codes.length < 1) {
+      newErrors.gungu_codes = '군구를 1개 이상 선택해주세요.';
+    } else if (formData.gungu_codes.length > 4) {
+      newErrors.gungu_codes = '군구는 최대 4개까지 선택 가능합니다.';
     }
     
     // 연락처 검증
@@ -373,15 +418,58 @@ const ClubCreatePage = () => {
                     </Grid>
                   </Grid>
                   
-                  <TextField
-                    fullWidth
-                    label="활동 지역*"
-                    value={formData.location}
-                    onChange={handleInputChange('location')}
-                    error={!!errors.location}
-                    helperText={errors.location}
-                    required
-                  />
+                  <FormControl fullWidth error={!!errors.sido_code} sx={{ mb: 1 }}>
+                    <InputLabel>시도 *</InputLabel>
+                    <Select
+                      value={formData.sido_code}
+                      onChange={handleSidoChange}
+                      label="시도 *"
+                    >
+                      <MenuItem value="">
+                        <em>선택</em>
+                      </MenuItem>
+                      {sidoList.map((s) => (
+                        <MenuItem key={s.code} value={s.code}>
+                          {s.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    {errors.sido_code && (
+                      <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
+                        {errors.sido_code}
+                      </Typography>
+                    )}
+                  </FormControl>
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                      군구 * (1~4개 선택)
+                    </Typography>
+                    {!formData.sido_code ? (
+                      <Typography variant="body2" color="text.secondary">
+                        시도를 먼저 선택해주세요.
+                      </Typography>
+                    ) : gunguLoading ? (
+                      <CircularProgress size={24} />
+                    ) : (
+                      <Stack direction="row" flexWrap="wrap" gap={1}>
+                        {gunguList.map((g) => (
+                          <Chip
+                            key={g.code}
+                            label={g.name}
+                            onClick={() => handleGunguToggle(g.code)}
+                            color={formData.gungu_codes?.includes(g.code) ? 'primary' : 'default'}
+                            variant={formData.gungu_codes?.includes(g.code) ? 'filled' : 'outlined'}
+                            sx={{ cursor: 'pointer' }}
+                          />
+                        ))}
+                      </Stack>
+                    )}
+                    {errors.gungu_codes && (
+                      <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
+                        {errors.gungu_codes}
+                      </Typography>
+                    )}
+                  </Box>
                   
                   <TextField
                     fullWidth

@@ -22,12 +22,36 @@ import {
   Paper
 } from '@mui/material';
 import { clubsApi } from '../../lib/api/clubs.js';
+import { regionApi } from '../../lib/api/region.js';
 import apiClient from '../../lib/api/apiClient.js';
 import { useSnackbar } from '../../contexts/SnackbarContext.jsx';
 import MainCard from '../../components/MainCard';
 import AnimateButton from '../../components/@extended/AnimateButton';
 import ExtendedAvatar from '../../components/@extended/Avatar';
 import { MdArrowBack as ArrowLeft, MdCheckCircle, MdCancel, MdPerson, MdEmail, MdCalendarToday, MdMessage, MdGroup as GroupIcon, MdAssignment as AssignmentIcon, MdPersonAdd as PersonAddIcon } from 'react-icons/md';
+
+function ClubApplicationRegionDisplay({ application }) {
+  const hasSidoGungu = application?.sido_code && application?.gungu_codes?.length > 0;
+  const { data: sidoList = [] } = useQuery({
+    queryKey: ['region-sido'],
+    queryFn: () => regionApi.getSidoList(),
+    enabled: hasSidoGungu,
+  });
+  const { data: gunguList = [] } = useQuery({
+    queryKey: ['region-gungu', application?.sido_code],
+    queryFn: () => regionApi.getGunguList(application.sido_code),
+    enabled: hasSidoGungu && !!application?.sido_code,
+  });
+  if (!hasSidoGungu) {
+    return <Typography variant="body1" fontWeight="600">{application?.location || 'N/A'}</Typography>;
+  }
+  const sidoName = sidoList.find((s) => s.code === application.sido_code)?.name || application.sido_code;
+  const gunguNames = (application.gungu_codes || [])
+    .map((code) => gunguList.find((g) => g.code === code)?.name || code)
+    .filter(Boolean);
+  const display = [sidoName, ...gunguNames].filter(Boolean).join(' ');
+  return <Typography variant="body1" fontWeight="600">{display || 'N/A'}</Typography>;
+}
 
 const ClubApplicationDetailPage = () => {
   const { id } = useParams();
@@ -260,7 +284,7 @@ const ClubApplicationDetailPage = () => {
                 </Grid>
                 <Box>
                   <Typography variant="body2" color="text.secondary">활동 지역</Typography>
-                  <Typography variant="body1" fontWeight="600">{application.location || 'N/A'}</Typography>
+                  <ClubApplicationRegionDisplay application={application} />
                 </Box>
                 <Box>
                   <Typography variant="body2" color="text.secondary">첨부 파일</Typography>

@@ -40,11 +40,30 @@ import {
   InputAdornment
 } from '@mui/material';
 import { clubsApi } from '../../lib/api/clubs';
+import { regionApi } from '../../lib/api/region';
 import { useSnackbar } from '../../contexts/SnackbarContext';
 import MainCard from '../../components/MainCard';
 import AnimateButton from '../../components/@extended/AnimateButton';
 import ExtendedAvatar from '../../components/@extended/Avatar';
 import { MdArrowBack as ArrowLeft, MdEdit, MdDelete, MdPersonAdd, MdBlock, MdCheckCircle, MdCancel, MdGroup as GroupIcon, MdLocationOn as LocationIcon, MdCalendarToday as CalendarIcon, MdPeople as PeopleIcon, MdTrendingUp as TrendingUpIcon, MdMoreVert as MoreVertIcon, MdPerson as PersonIcon, MdSearch as SearchIcon, MdRefresh as RefreshIcon, MdSwapHoriz as SwapIcon, MdPersonRemove as PersonRemoveIcon, MdAdminPanelSettings as AdminIcon, MdNotifications as NotificationsIcon, MdDescription as DescriptionIcon, MdAttachMoney as MoneyIcon } from 'react-icons/md';
+
+function ClubRegionDisplay({ sidoCode, gunguCodes }) {
+  const { data: sidoList = [] } = useQuery({
+    queryKey: ['region-sido'],
+    queryFn: () => regionApi.getSidoList(),
+  });
+  const { data: gunguList = [] } = useQuery({
+    queryKey: ['region-gungu', sidoCode],
+    queryFn: () => regionApi.getGunguList(sidoCode),
+    enabled: !!sidoCode,
+  });
+  const sidoName = sidoList.find((s) => s.code === sidoCode)?.name || sidoCode || '';
+  const gunguNames = (gunguCodes || [])
+    .map((code) => gunguList.find((g) => g.code === code)?.name || code)
+    .filter(Boolean);
+  const display = [sidoName, ...gunguNames].filter(Boolean).join(' ');
+  return <Typography variant="body1">{display || 'N/A'}</Typography>;
+}
 
 const ClubDetailPage = () => {
   const { id } = useParams();
@@ -666,7 +685,7 @@ const ClubDetailPage = () => {
                   <Grid container spacing={2}>
                     <Grid item xs={6}>
                       <Typography variant="body2" color="text.secondary">활동 지역</Typography>
-                      <Typography variant="body1">{club.location || 'N/A'}</Typography>
+                      <ClubRegionDisplay sidoCode={club.sido_code} gunguCodes={club.gungu_codes} />
                     </Grid>
                     <Grid item xs={6}>
                       <Typography variant="body2" color="text.secondary">연락처</Typography>
