@@ -24,51 +24,54 @@ api.interceptors.request.use(
 // 응답 인터셉터 설정
 setupResponseInterceptor(api);
 
-// 모임 관리 API
+// 모임 관리 API (백엔드 /api/v1/admin/meetings)
 export const meetingsApi = {
-  // 모임 목록 조회
-  getMeetings: (params) => api.get('/admin/meetings', { params }),
+  // 모임 목록 조회 (통합: 라운딩+소셜, meeting_type: ROUND | SOCIAL)
+  getMeetings: (params) => api.get('/v1/admin/meetings', { params }),
   
   // 모임 상세 조회
-  getMeeting: (id) => api.get(`/admin/meetings/${id}`),
+  getMeeting: (id) => api.get(`/v1/admin/meetings/${id}`),
   
-  // 모임 생성
-  createMeeting: (data) => api.post('/admin/meetings', data),
+  // 라운딩 모임 생성
+  createRoundingMeeting: (data) => api.post('/v1/admin/meetings/rounding', data),
+  
+  // 소셜(이벤트) 모임 생성
+  createEventMeeting: (data) => api.post('/v1/admin/meetings/event', data),
   
   // 모임 수정
-  updateMeeting: (id, data) => api.put(`/admin/meetings/${id}`, data),
+  updateMeeting: (id, data) => api.put(`/v1/admin/meetings/${id}`, data),
   
   // 모임 삭제
-  deleteMeeting: (id) => api.delete(`/admin/meetings/${id}`),
+  deleteMeeting: (id) => api.delete(`/v1/admin/meetings/${id}`),
   
   // 모임 상태 변경
-  updateMeetingStatus: (id, data) => api.put(`/admin/meetings/${id}/status`, data),
+  updateMeetingStatus: (id, data) => api.put(`/v1/admin/meetings/${id}/status`, data),
   
   // 모임 통계 조회
-  getMeetingStats: (id) => api.get(`/admin/meetings/${id}/stats`),
+  getMeetingStats: (id) => api.get(`/v1/admin/meetings/${id}/stats`),
   
   // 모임 참가자 조회
-  getMeetingParticipants: (id) => api.get(`/admin/meetings/${id}/participants`),
+  getMeetingParticipants: (id) => api.get(`/v1/admin/meetings/${id}/participants`),
   
   // 모임 참가자 추가/제거
-  addParticipant: (id, data) => api.post(`/admin/meetings/${id}/participants`, data),
-  removeParticipant: (id, participantId) => api.delete(`/admin/meetings/${id}/participants/${participantId}`),
+  addParticipant: (id, data) => api.post(`/v1/admin/meetings/${id}/participants`, data),
+  removeParticipant: (id, participantId) => api.delete(`/v1/admin/meetings/${id}/participants/${participantId}`),
   
   // 모임 비용 관리
-  getMeetingExpenses: (id) => api.get(`/admin/meetings/${id}/expenses`),
-  createExpense: (id, data) => api.post(`/admin/meetings/${id}/expenses`, data),
-  updateExpense: (id, expenseId, data) => api.put(`/admin/meetings/${id}/expenses/${expenseId}`, data),
-  deleteExpense: (id, expenseId) => api.delete(`/admin/meetings/${id}/expenses/${expenseId}`),
+  getMeetingExpenses: (id) => api.get(`/v1/admin/meetings/${id}/expenses`),
+  createExpense: (id, data) => api.post(`/v1/admin/meetings/${id}/expenses`, data),
+  updateExpense: (id, expenseId, data) => api.put(`/v1/admin/meetings/${id}/expenses/${expenseId}`, data),
+  deleteExpense: (id, expenseId) => api.delete(`/v1/admin/meetings/${id}/expenses/${expenseId}`),
   
   // 모임 점수 관리
-  getMeetingScores: (id) => api.get(`/admin/meetings/${id}/scores`),
-  updateScore: (id, participantId, data) => api.put(`/admin/meetings/${id}/scores/${participantId}`, data),
+  getMeetingScores: (id) => api.get(`/v1/admin/meetings/${id}/scores`),
+  updateScore: (id, participantId, data) => api.put(`/v1/admin/meetings/${id}/scores/${participantId}`, data),
   
   // 모임 팀 관리
-  getMeetingTeams: (id) => api.get(`/admin/meetings/${id}/teams`),
-  createTeam: (id, data) => api.post(`/admin/meetings/${id}/teams`, data),
-  updateTeam: (id, teamId, data) => api.put(`/admin/meetings/${id}/teams/${teamId}`, data),
-  deleteTeam: (id, teamId) => api.delete(`/admin/meetings/${id}/teams/${teamId}`),
+  getMeetingTeams: (id) => api.get(`/v1/admin/meetings/${id}/teams`),
+  createTeam: (id, data) => api.post(`/v1/admin/meetings/${id}/teams`, data),
+  updateTeam: (id, teamId, data) => api.put(`/v1/admin/meetings/${id}/teams/${teamId}`, data),
+  deleteTeam: (id, teamId) => api.delete(`/v1/admin/meetings/${id}/teams/${teamId}`),
 };
 
 export default meetingsApi;
