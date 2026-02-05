@@ -95,8 +95,8 @@ const FAQDetailPage = () => {
             <Typography variant="subtitle2" color="textSecondary" gutterBottom>
               카테고리
             </Typography>
-            {faq.category_name ? (
-              <Chip label={faq.category_name} size="small" color="primary" />
+            {(faq.category_title ?? faq.category_name) ? (
+              <Chip label={faq.category_title ?? faq.category_name} size="small" color="primary" />
             ) : (
               <Typography variant="body2" color="textSecondary">
                 카테고리 없음
