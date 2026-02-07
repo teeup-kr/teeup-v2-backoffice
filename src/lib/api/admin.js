@@ -794,6 +794,21 @@ export const adminMeetingSettlementApi = {
   createRoundSettlement: async (meetingId, data) => {
     const response = await apiClient.post(`/admin/meetings/${meetingId}/settlement/rounding`, data);
     return response.data;
+  },
+
+  // 소셜 정산 생성/수정
+  createSocialSettlement: async (meetingId, data) => {
+    const response = await apiClient.post(`/admin/meetings/${meetingId}/settlement/social`, data);
+    return response.data;
+  },
+
+  // 정산 참가자 납부 완료/미완료 표시
+  markParticipantPaid: async (meetingId, expenseId, data) => {
+    const response = await apiClient.patch(
+      `/admin/meetings/${meetingId}/expenses/${expenseId}/participants/mark-paid`,
+      data
+    );
+    return response.data;
   }
 };
 

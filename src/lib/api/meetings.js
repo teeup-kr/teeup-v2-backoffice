@@ -57,7 +57,7 @@ export const meetingsApi = {
   addParticipant: (id, data) => api.post(`/v1/admin/meetings/${id}/participants`, data),
   removeParticipant: (id, participantId) => api.delete(`/v1/admin/meetings/${id}/participants/${participantId}`),
   
-  // 모임 비용 관리
+  // 모임 비용 관리 (admin 경로: /admin/meetings/{id}/expenses)
   getMeetingExpenses: (id) => api.get(`/v1/admin/meetings/${id}/expenses`),
   createExpense: (id, data) => api.post(`/v1/admin/meetings/${id}/expenses`, data),
   updateExpense: (id, expenseId, data) => api.put(`/v1/admin/meetings/${id}/expenses/${expenseId}`, data),
@@ -72,6 +72,8 @@ export const meetingsApi = {
   createTeam: (id, data) => api.post(`/v1/admin/meetings/${id}/teams`, data),
   updateTeam: (id, teamId, data) => api.put(`/v1/admin/meetings/${id}/teams/${teamId}`, data),
   deleteTeam: (id, teamId) => api.delete(`/v1/admin/meetings/${id}/teams/${teamId}`),
+  // 자동 팀 편성
+  autoFormTeams: (id, data) => api.post(`/v1/admin/meetings/${id}/teams/auto-formation`, data),
 };
 
 export default meetingsApi;
