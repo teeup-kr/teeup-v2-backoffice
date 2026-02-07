@@ -19,9 +19,14 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Stack
+  Stack,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Divider
 } from '@mui/material';
-import { MdArrowBack as ArrowLeft, MdAdd as PlusIcon, MdEdit as EditIcon, MdDelete as DeleteIcon } from 'react-icons/md';
+import { MdArrowBack as ArrowLeft, MdAdd as PlusIcon, MdEdit as EditIcon, MdDelete as DeleteIcon, MdAutoFixHigh as AutoIcon } from 'react-icons/md';
 import { meetingsApi } from '../../lib/api/meetings';
 import { adminRoundsApi } from '../../lib/api/admin';
 import MainCard from '../../components/MainCard';
@@ -38,6 +43,8 @@ const RoundTeamManagementPage = () => {
   const [editingTeam, setEditingTeam] = useState(null);
   const [teamName, setTeamName] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [formationMode, setFormationMode] = useState('GENDER_MIXED_HANDICAP');
+  const [teamSize, setTeamSize] = useState(4);
 
   const { data: round, isLoading: roundLoading, error: roundError } = useQuery({
     queryKey: ['admin-round', id],
@@ -49,6 +56,27 @@ const RoundTeamManagementPage = () => {
     queryKey: ['admin-round-teams', id],
     queryFn: () => meetingsApi.getMeetingTeams(id),
     enabled: !!id && !!round,
+  });
+
+  const { data: participantsData } = useQuery({
+    queryKey: ['admin-round-participants', id],
+    queryFn: () => meetingsApi.getMeetingParticipants(id),
+    enabled: !!id && !!round,
+  });
+
+  const participants = Array.isArray(participantsData)
+    ? participantsData
+    : participantsData?.data ?? participantsData?.participants ?? [];
+  const confirmedCount = participants.filter((p) => p.status === 'CONFIRMED').length;
+
+  const autoFormMutation = useMutation({
+    mutationFn: (data) => meetingsApi.autoFormTeams(id, data),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-round-teams', id] });
+      showSnackbar(`${res?.total_teams ?? 0}개 팀이 자동 편성되었습니다.`, 'success');
+    },
+    onError: (err) =>
+      showSnackbar(err.response?.data?.detail || err.response?.data?.message || '자동 편성 실패', 'error'),
   });
 
   const createMutation = useMutation({
@@ -146,7 +174,53 @@ const RoundTeamManagementPage = () => {
         {roundData.name}
       </Typography>
 
-      <MainCard>
+      <MainCard title="자동 팀 편성" sx={{ mb: 3 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          확정된 참가자 {confirmedCount}명 기준으로 자동 편성합니다. (최소 4명 필요)
+        </Typography>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="flex-start">
+          <FormControl size="small" sx={{ minWidth: 220 }}>
+            <InputLabel>편성 모드</InputLabel>
+            <Select
+              value={formationMode}
+              label="편성 모드"
+              onChange={(e) => setFormationMode(e.target.value)}
+            >
+              <MenuItem value="GENDER_MIXED_HANDICAP">성별 혼합 + 핸디캡 기준</MenuItem>
+              <MenuItem value="GENDER_MIXED_PREVIOUS_RECORD">성별 혼합 + 직전대회 성적</MenuItem>
+              <MenuItem value="GENDER_MIXED_RANDOM">성별 혼합 + 랜덤</MenuItem>
+              <MenuItem value="GENDER_SEPARATED_HANDICAP">성별 분리 + 핸디캡 기준</MenuItem>
+              <MenuItem value="GENDER_SEPARATED_PREVIOUS_RECORD">성별 분리 + 직전대회 성적</MenuItem>
+              <MenuItem value="GENDER_SEPARATED_RANDOM">성별 분리 + 랜덤</MenuItem>
+            </Select>
+          </FormControl>
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel>팀당 인원</InputLabel>
+            <Select value={teamSize} label="팀당 인원" onChange={(e) => setTeamSize(Number(e.target.value))}>
+              <MenuItem value={2}>2명</MenuItem>
+              <MenuItem value={3}>3명</MenuItem>
+              <MenuItem value={4}>4명</MenuItem>
+            </Select>
+          </FormControl>
+          <Button
+            variant="outlined"
+            startIcon={autoFormMutation.isPending ? <CircularProgress size={18} /> : <AutoIcon />}
+            onClick={() => autoFormMutation.mutate({ formation_mode: formationMode, team_size: teamSize })}
+            disabled={autoFormMutation.isPending || confirmedCount < 4}
+          >
+            자동 편성 실행
+          </Button>
+        </Stack>
+        {confirmedCount < 4 && (
+          <Alert severity="info" sx={{ mt: 2 }}>
+            확정된 참가자가 4명 이상일 때 자동 편성을 실행할 수 있습니다.
+          </Alert>
+        )}
+      </MainCard>
+
+      <Divider sx={{ my: 2 }} />
+
+      <MainCard title="팀 목록">
         {teamsLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <CircularProgress />

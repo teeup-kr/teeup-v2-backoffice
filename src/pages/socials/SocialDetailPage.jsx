@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Typography,
   Button,
@@ -14,9 +14,14 @@ import {
   CardContent,
   Avatar,
   Paper,
-  Stack
+  Stack,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField
 } from '@mui/material';
-import { MdArrowBack as ArrowLeft, MdPerson as PersonIcon, MdEdit as EditIcon, MdAttachMoney as ExpenseIcon } from 'react-icons/md';
+import { MdArrowBack as ArrowLeft, MdPerson as PersonIcon, MdEdit as EditIcon, MdAttachMoney as ExpenseIcon, MdCheckCircle as CheckIcon } from 'react-icons/md';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { adminSocialsApi, adminMeetingSettlementApi } from '../../lib/api/admin';
@@ -55,6 +60,54 @@ const SocialDetailPage = () => {
     queryFn: () => adminMeetingSettlementApi.getMeetingSettlement(id),
     enabled: !!id && !!social,
   });
+
+  const queryClient = useQueryClient();
+  const [payModalOpen, setPayModalOpen] = useState(false);
+  const [payTarget, setPayTarget] = useState(null);
+  const [payAmount, setPayAmount] = useState('');
+
+  const markPaidMutation = useMutation({
+    mutationFn: ({ meetingId, expenseId, data }) =>
+      adminMeetingSettlementApi.markParticipantPaid(meetingId, expenseId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-social-settlement', id] });
+      setPayModalOpen(false);
+      setPayTarget(null);
+      setPayAmount('');
+    },
+    onError: (err) => {
+      console.error('납부 완료 처리 실패:', err);
+    },
+  });
+
+  const handleOpenPayModal = (p) => {
+    setPayTarget(p);
+    setPayAmount(p?.amount_paid != null ? String(p.amount_paid) : '');
+    setPayModalOpen(true);
+  };
+
+  const handleMarkPaid = () => {
+    if (!payTarget || !settlementData?.settlement) return;
+    const expenseId = settlementData.settlement.id;
+    const data = {
+      user_id: payTarget.user_id || null,
+      guest_id: payTarget.guest_id || null,
+      is_paid: true,
+      amount_paid: payAmount ? parseFloat(payAmount) : null,
+    };
+    markPaidMutation.mutate({ meetingId: id, expenseId, data });
+  };
+
+  const handleMarkUnpaid = () => {
+    if (!payTarget || !settlementData?.settlement) return;
+    const expenseId = settlementData.settlement.id;
+    const data = {
+      user_id: payTarget.user_id || null,
+      guest_id: payTarget.guest_id || null,
+      is_paid: false,
+    };
+    markPaidMutation.mutate({ meetingId: id, expenseId, data });
+  };
 
   // 날짜 포맷팅
   const formatDate = (dateString) => {
@@ -658,8 +711,8 @@ const SocialDetailPage = () => {
                       </Typography>
                       <Grid container spacing={1}>
                         {settlement.participants.map((p) => (
-                          <Grid item xs={12} sm={6} key={p.user_id || p.id}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Grid item xs={12} sm={6} key={p.user_id ?? p.guest_id ?? p.id}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                               <Typography variant="body2">
                                 {p.user_name || p.user_nickname || '-'}
                               </Typography>
@@ -674,6 +727,15 @@ const SocialDetailPage = () => {
                               {!p.is_paid && (
                                 <Chip label="미납부" size="small" color="default" />
                               )}
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<CheckIcon />}
+                                onClick={() => handleOpenPayModal(p)}
+                                sx={{ ml: 0.5 }}
+                              >
+                                {p.is_paid ? '수정' : '납부 완료'}
+                              </Button>
                             </Box>
                           </Grid>
                         ))}
@@ -690,6 +752,47 @@ const SocialDetailPage = () => {
           </Card>
         </Grid>
       </Grid>
+
+      {/* 납부 완료 모달 */}
+      <Dialog open={payModalOpen} onClose={() => setPayModalOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>납부 완료</DialogTitle>
+        <DialogContent>
+          {payTarget && (
+            <Box sx={{ pt: 1 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                {payTarget.user_name || payTarget.user_nickname || '-'} 참가자
+              </Typography>
+              <TextField
+                fullWidth
+                label="납부 금액 (원)"
+                type="number"
+                value={payAmount}
+                onChange={(e) => setPayAmount(e.target.value)}
+                placeholder="비워두면 부담금 전액으로 처리"
+                InputProps={{ inputProps: { min: 0 } }}
+              />
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                빈 값이면 정산 부담금 전액으로 납부 완료 처리됩니다.
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          {payTarget?.is_paid && (
+            <Button
+              color="error"
+              onClick={handleMarkUnpaid}
+              disabled={markPaidMutation.isPending}
+            >
+              미납부로 변경
+            </Button>
+          )}
+          <Button onClick={() => setPayModalOpen(false)}>취소</Button>
+          <Button variant="contained" onClick={handleMarkPaid} disabled={markPaidMutation.isPending}>
+            납부 완료
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
