@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 
 // material-ui
@@ -12,13 +12,15 @@ import Avatar from '@mui/material/Avatar';
 // project imports
 import NavGroup from './Navigation/NavGroup';
 import NavItem from './Navigation/NavItem';
+import { useAuth } from '../../../../hooks/useAuth';
+import { filterMenuByRole } from '../../../../constants/adminRoles';
 
 // assets
 import { MdDashboard as DashboardOutlined, MdPerson as UserOutlined, MdGroup as TeamOutlined, MdCalendarToday as CalendarOutlined, MdSettings as SettingOutlined, MdChevronRight as SubMenuIcon, MdSupport as SupportOutlined, MdAnnouncement as AnnouncementOutlined, MdQuestionAnswer as QuestionAnswerOutlined, MdContactSupport as ContactSupportOutlined } from 'react-icons/md';
 
 // ==============================|| DRAWER - CONTENT ||============================== //
 
-const menuItems = [
+const allMenuItems = [
   {
     id: 'dashboard',
     title: '대시보드',
@@ -134,7 +136,13 @@ const menuItems = [
 export default function DrawerContent({ drawerOpen = true }) {
   const theme = useTheme();
   const location = useLocation();
+  const { admin } = useAuth();
   const [selected, setSelected] = useState('dashboard');
+
+  const menuItems = useMemo(() => {
+    const role = admin?.role || 'SUPER_ADMIN';
+    return filterMenuByRole(role, allMenuItems);
+  }, [admin?.role]);
 
   // 현재 경로에 따라 선택 상태 업데이트
   useEffect(() => {

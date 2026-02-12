@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTheme } from '@mui/material/styles';
 import {
   Box,
   Typography,
@@ -9,145 +11,191 @@ import {
   Divider,
   Chip,
   Grid,
-  Stack
+  Stack,
+  Card,
+  CardContent,
+  Avatar,
+  Skeleton,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Paper
 } from '@mui/material';
-import { MdSave as SaveIcon, MdEdit as EditIcon, MdAdminPanelSettings, MdEmail, MdPerson, MdSecurity, MdHistory, MdTrendingUp as TrendingUpIcon } from 'react-icons/md';
+import { MdSave as SaveIcon, MdEdit as EditIcon, MdAdminPanelSettings as AdminPanelSettings, MdEmail as Email, MdPerson as Person, MdPhone as PhoneIcon, MdSecurity as Security, MdHistory as History, MdLock as LockIcon, MdSettings as SettingsIcon } from 'react-icons/md';
 import { authApi } from '../../lib/api/auth';
-import MainCard from '../../components/MainCard';
-import AnimateButton from '../../components/@extended/AnimateButton';
-import ExtendedAvatar from '../../components/@extended/Avatar';
+import { ADMIN_ROLE_LABELS } from '../../constants/adminRoles';
+
+const getInitials = (name) => {
+  if (!name || typeof name !== 'string') return '?';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+};
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return 'N/A';
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return 'N/A';
+  }
+};
 
 const AdminProfilePage = () => {
+  const theme = useTheme();
+  const navigate = useNavigate();
+  const iconColor = theme.palette.primary.main;
   const [adminData, setAdminData] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-  });
+  const [formData, setFormData] = useState({ name: '', email: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  // 관리자 정보 로드
   useEffect(() => {
     const loadAdminData = async () => {
       try {
         setIsLoading(true);
-        const admin = await authApi.getCurrentAdmin();
+        const res = await authApi.getCurrentAdmin();
+        const admin = res?.data ?? res;
         setAdminData(admin);
-        setFormData({
-          name: admin.name,
-          email: admin.email,
-        });
-      } catch (error) {
+        setFormData({ name: admin?.name ?? '', email: admin?.email ?? '' });
+      } catch (err) {
         setError('관리자 정보를 불러오는데 실패했습니다.');
-        console.error('Load admin data error:', error);
+        console.error('Load admin data error:', err);
       } finally {
         setIsLoading(false);
       }
     };
-
     loadAdminData();
   }, []);
 
-  // 입력값 변경 핸들러
   const handleInputChange = (field) => (event) => {
-    setFormData(prev => ({ ...prev, [field]: event.target.value }));
+    setFormData((prev) => ({ ...prev, [field]: event.target.value }));
     if (error) setError(null);
   };
 
-  // 편집 모드 토글
   const toggleEdit = () => {
-    setIsEditing(prev => !prev);
+    setIsEditing((prev) => !prev);
     if (!isEditing && adminData) {
-      // 편집 모드 진입 시 현재 정보로 초기화
-      setFormData({
-        name: adminData.name,
-        email: adminData.email,
-      });
+      const admin = adminData?.data ?? adminData;
+      setFormData({ name: admin?.name ?? '', email: admin?.email ?? '' });
     }
   };
 
-  // 프로필 저장
   const handleSaveProfile = async () => {
-    if (!formData.name.trim() || !formData.email.trim()) {
+    if (!formData.name?.trim() || !formData.email?.trim()) {
       setError('이름과 이메일을 입력해주세요.');
       return;
     }
-
     setIsLoading(true);
     setError(null);
-
     try {
-      const updatedAdmin = await authApi.updateProfile({
-        name: formData.name,
-        email: formData.email,
-      });
-
-      setAdminData(updatedAdmin);
+      const res = await authApi.updateProfile({ name: formData.name, email: formData.email });
+      const updated = res?.data ?? res;
+      setAdminData(updated);
       setIsEditing(false);
       setSuccess('프로필이 성공적으로 업데이트되었습니다.');
-      
-      // 3초 후 성공 메시지 숨기기
       setTimeout(() => setSuccess(null), 3000);
-      
-    } catch (error) {
-      setError(error.response?.data?.message || '프로필 업데이트에 실패했습니다.');
+    } catch (err) {
+      setError(err?.response?.data?.message || '프로필 업데이트에 실패했습니다.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // 편집 취소
   const handleCancelEdit = () => {
     setIsEditing(false);
-    if (adminData) {
-      setFormData({
-        name: adminData.name,
-        email: adminData.email,
-      });
-    }
+    const admin = adminData?.data ?? adminData;
+    if (admin) setFormData({ name: admin.name ?? '', email: admin.email ?? '' });
     setError(null);
   };
 
+  const data = adminData?.data ?? adminData;
+  const name = data?.name ?? '';
+  const email = data?.email ?? '';
+  const phoneNumber = data?.phone_number ?? '';
+  const roleLabel = ADMIN_ROLE_LABELS[data?.role] || data?.role || '관리자';
+
   if (isLoading && !adminData) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
-        <CircularProgress />
+      <Box sx={{ p: 3 }}>
+        <Skeleton variant="text" width={200} height={40} sx={{ mb: 3 }} />
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={8}>
+            <Card elevation={2} sx={{ borderRadius: 2 }}>
+              <CardContent>
+                <Skeleton variant="rectangular" height={120} sx={{ borderRadius: 1, mb: 2 }} />
+                <Skeleton variant="rectangular" height={60} sx={{ borderRadius: 1 }} />
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Card elevation={2} sx={{ borderRadius: 2 }}>
+              <CardContent sx={{ textAlign: 'center' }}>
+                <Skeleton variant="circular" width={96} height={96} sx={{ mx: 'auto', mb: 2 }} />
+                <Skeleton variant="text" width="60%" sx={{ mx: 'auto', mb: 1 }} />
+                <Skeleton variant="text" width="40%" sx={{ mx: 'auto' }} />
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
       </Box>
     );
   }
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        관리자 프로필
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+        <Typography variant="h4" fontWeight={600}>
+          관리자 프로필
+        </Typography>
+        <Stack direction="row" spacing={1}>
+          <Button
+            variant="outlined"
+            startIcon={<LockIcon />}
+            onClick={() => navigate('/settings')}
+          >
+            비밀번호 변경
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<SettingsIcon />}
+            onClick={() => navigate('/settings')}
+          >
+            설정
+          </Button>
+        </Stack>
+      </Box>
 
-      {/* 성공/에러 메시지 */}
       {success && (
-        <Alert severity="success" sx={{ mb: 3 }}>
+        <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccess(null)}>
           {success}
         </Alert>
       )}
-      
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
 
       <Grid container spacing={3}>
-        {/* 프로필 정보 카드 */}
         <Grid item xs={12} md={8}>
-          <Card>
-            <CardContent>
+          <Card elevation={2} sx={{ borderRadius: 2, overflow: 'hidden' }}>
+            <CardContent sx={{ p: 3 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h6">
-                  기본 정보
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Person size={24} style={{ color: iconColor }} />
+                  <Typography variant="h6" fontWeight={600}>
+                    기본 정보
+                  </Typography>
+                </Box>
                 <Button
-                  variant={isEditing ? "outlined" : "contained"}
+                  variant={isEditing ? 'outlined' : 'contained'}
                   startIcon={isEditing ? <SaveIcon /> : <EditIcon />}
                   onClick={isEditing ? handleSaveProfile : toggleEdit}
                   disabled={isLoading}
@@ -157,7 +205,7 @@ const AdminProfilePage = () => {
               </Box>
 
               {isEditing ? (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Stack spacing={2}>
                   <TextField
                     fullWidth
                     label="이름"
@@ -173,7 +221,7 @@ const AdminProfilePage = () => {
                     onChange={handleInputChange('email')}
                     disabled={isLoading}
                   />
-                  <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                  <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
                     <Button
                       variant="contained"
                       onClick={handleSaveProfile}
@@ -182,77 +230,147 @@ const AdminProfilePage = () => {
                     >
                       {isLoading ? '저장 중...' : '저장'}
                     </Button>
-                    <Button
-                      variant="outlined"
-                      onClick={handleCancelEdit}
-                      disabled={isLoading}
-                    >
+                    <Button variant="outlined" onClick={handleCancelEdit} disabled={isLoading}>
                       취소
                     </Button>
-                  </Box>
-                </Box>
+                  </Stack>
+                </Stack>
               ) : (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Person color="primary" />
-                    <Typography variant="body1">
-                      <strong>이름:</strong> {adminData?.name}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Email color="primary" />
-                    <Typography variant="body1">
-                      <strong>이메일:</strong> {adminData?.email}
-                    </Typography>
-                  </Box>
-                </Box>
+                <List disablePadding>
+                  <ListItem sx={{ px: 0, py: 1.5 }}>
+                    <ListItemIcon sx={{ minWidth: 40 }}>
+                      <Person size={20} style={{ color: iconColor }} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="이름"
+                      secondary={name || '-'}
+                      primaryTypographyProps={{ variant: 'body2', color: 'text.secondary' }}
+                      secondaryTypographyProps={{ variant: 'body1', fontWeight: 500 }}
+                    />
+                  </ListItem>
+                  <ListItem sx={{ px: 0, py: 1.5 }}>
+                    <ListItemIcon sx={{ minWidth: 40 }}>
+                      <Email size={20} style={{ color: iconColor }} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="이메일"
+                      secondary={email || '-'}
+                      primaryTypographyProps={{ variant: 'body2', color: 'text.secondary' }}
+                      secondaryTypographyProps={{ variant: 'body1', fontWeight: 500 }}
+                    />
+                  </ListItem>
+                  <ListItem sx={{ px: 0, py: 1.5 }}>
+                    <ListItemIcon sx={{ minWidth: 40 }}>
+                      <AdminPanelSettings size={20} style={{ color: iconColor }} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="관리자 역할"
+                      secondary={roleLabel}
+                      primaryTypographyProps={{ variant: 'body2', color: 'text.secondary' }}
+                      secondaryTypographyProps={{ variant: 'body1', fontWeight: 500 }}
+                    />
+                  </ListItem>
+                  <ListItem sx={{ px: 0, py: 1.5 }}>
+                    <ListItemIcon sx={{ minWidth: 40 }}>
+                      <PhoneIcon size={20} style={{ color: iconColor }} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="연락처"
+                      secondary={phoneNumber || '-'}
+                      primaryTypographyProps={{ variant: 'body2', color: 'text.secondary' }}
+                      secondaryTypographyProps={{ variant: 'body1', fontWeight: 500 }}
+                    />
+                  </ListItem>
+                </List>
               )}
+            </CardContent>
+          </Card>
+
+          <Card elevation={2} sx={{ borderRadius: 2, mt: 3, overflow: 'hidden' }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                <History size={24} style={{ color: iconColor }} />
+                <Typography variant="h6" fontWeight={600}>
+                  계정 정보
+                </Typography>
+              </Box>
+              <List disablePadding>
+                <ListItem sx={{ px: 0, py: 1 }}>
+                  <ListItemText
+                    primary="가입일"
+                    secondary={formatDate(data?.created_at)}
+                    primaryTypographyProps={{ variant: 'body2', color: 'text.secondary' }}
+                    secondaryTypographyProps={{ variant: 'body1' }}
+                  />
+                </ListItem>
+                {data?.updated_at && (
+                  <ListItem sx={{ px: 0, py: 1 }}>
+                    <ListItemText
+                      primary="마지막 수정일"
+                      secondary={formatDate(data.updated_at)}
+                      primaryTypographyProps={{ variant: 'body2', color: 'text.secondary' }}
+                      secondaryTypographyProps={{ variant: 'body1' }}
+                    />
+                  </ListItem>
+                )}
+              </List>
             </CardContent>
           </Card>
         </Grid>
 
-        {/* 프로필 아바타 및 상태 */}
         <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
+          <Card elevation={2} sx={{ borderRadius: 2, overflow: 'hidden' }}>
+            <CardContent sx={{ p: 3, textAlign: 'center' }}>
               <Avatar
                 sx={{
-                  width: 80,
-                  height: 80,
+                  width: 96,
+                  height: 96,
                   mx: 'auto',
                   mb: 2,
                   bgcolor: 'primary.main',
+                  fontSize: '2rem',
+                  fontWeight: 600,
                 }}
               >
-                <AdminPanelSettings style={{ fontSize: 40 }} />
+                {getInitials(name)}
               </Avatar>
-              
-              <Typography variant="h6" gutterBottom>
-                {adminData?.name}
+              <Typography variant="h6" fontWeight={600} gutterBottom>
+                {name || '관리자'}
               </Typography>
-              
               <Chip
-                label="관리자"
+                label={roleLabel}
                 color="primary"
-                icon={<AdminPanelSettings />}
+                icon={<AdminPanelSettings size={16} />}
                 sx={{ mb: 2 }}
               />
-              
               <Divider sx={{ my: 2 }} />
-              
               <Box sx={{ textAlign: 'left' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                  <Security color="action" />
-                  <Typography variant="body2" color="text.secondary">
-                    관리자 권한
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                  <History color="action" />
-                  <Typography variant="body2" color="text.secondary">
-                    가입일: {adminData?.created_at ? new Date(adminData.created_at).toLocaleDateString('ko-KR') : 'N/A'}
-                  </Typography>
-                </Box>
+                <Paper variant="outlined" sx={{ p: 1.5, mb: 1, borderRadius: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Security size={20} style={{ color: iconColor }} />
+                    <Typography variant="body2" color="text.secondary">
+                      역할: {roleLabel}
+                    </Typography>
+                  </Box>
+                </Paper>
+                {phoneNumber && (
+                  <Paper variant="outlined" sx={{ p: 1.5, mb: 1, borderRadius: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <PhoneIcon size={20} style={{ color: iconColor }} />
+                      <Typography variant="body2" color="text.secondary">
+                        {phoneNumber}
+                      </Typography>
+                    </Box>
+                  </Paper>
+                )}
+                <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <History size={20} style={{ color: iconColor }} />
+                    <Typography variant="body2" color="text.secondary">
+                      가입: {formatDate(data?.created_at)}
+                    </Typography>
+                  </Box>
+                </Paper>
               </Box>
             </CardContent>
           </Card>

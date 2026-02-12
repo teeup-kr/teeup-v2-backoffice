@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '../../hooks/useAuth';
 import {
   Box,
   Button,
@@ -14,6 +15,7 @@ import {
 } from '@mui/material';
 import { MdArrowBack as ArrowLeft, MdEdit as EditIcon } from 'react-icons/md';
 import { adminAdminsApi } from '../../lib/api/admin';
+import { ADMIN_ROLE_LABELS } from '../../constants/adminRoles';
 import MainCard from '../../components/MainCard';
 import ExtendedAvatar from '../../components/@extended/Avatar';
 import { MdAdminPanelSettings as AdminIcon } from 'react-icons/md';
@@ -30,6 +32,8 @@ const getStatusLabel = (status) => {
 const AdminDetailPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { admin: currentAdmin } = useAuth();
+  const isSuperAdmin = currentAdmin?.role === 'SUPER_ADMIN';
 
   const { data: admin, isLoading, error } = useQuery({
     queryKey: ['admin', id],
@@ -63,6 +67,15 @@ const AdminDetailPage = () => {
           <Button startIcon={<ArrowLeft />} onClick={() => navigate('/admins')} variant="outlined">
             목록으로
           </Button>
+          {isSuperAdmin && (
+            <Button
+              startIcon={<EditIcon />}
+              variant="contained"
+              onClick={() => navigate(`/admins/${id}/edit`)}
+            >
+              수정
+            </Button>
+          )}
         </Stack>
 
         <Card variant="outlined" sx={{ mb: 3 }}>
@@ -77,6 +90,14 @@ const AdminDetailPage = () => {
                 </Typography>
                 <Stack direction="row" spacing={1} flexWrap="wrap">
                   <Chip label={getStatusLabel(admin.status)} color="success" size="small" />
+                  {admin.role && (
+                    <Chip
+                      label={ADMIN_ROLE_LABELS[admin.role] || admin.role}
+                      color="primary"
+                      variant="outlined"
+                      size="small"
+                    />
+                  )}
                 </Stack>
               </Box>
             </Stack>
@@ -101,6 +122,12 @@ const AdminDetailPage = () => {
                 <Typography variant="caption" color="textSecondary">상태</Typography>
                 <Typography variant="body1">{getStatusLabel(admin.status)}</Typography>
               </Box>
+              {admin.role && (
+                <Box>
+                  <Typography variant="caption" color="textSecondary">역할</Typography>
+                  <Typography variant="body1">{ADMIN_ROLE_LABELS[admin.role] || admin.role}</Typography>
+                </Box>
+              )}
               {admin.phone_number && (
                 <Box>
                   <Typography variant="caption" color="textSecondary">전화번호</Typography>
