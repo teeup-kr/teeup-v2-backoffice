@@ -11,10 +11,15 @@ import {
   Stack,
   CircularProgress,
   Alert,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import { MdArrowBack as ArrowLeft } from 'react-icons/md';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminAdminsApi } from '../../lib/api/admin';
+import { ADMIN_ROLES, ADMIN_ROLE_LABELS } from '../../constants/adminRoles';
 import MainCard from '../../components/MainCard';
 
 const AdminCreatePage = () => {
@@ -27,6 +32,7 @@ const AdminCreatePage = () => {
     password: '',
     name: '',
     phone_number: '',
+    role: 'SUPER_ADMIN',
   });
   const [errors, setErrors] = useState({});
 
@@ -122,6 +128,20 @@ const AdminCreatePage = () => {
                   error={!!errors.phone_number}
                   helperText={errors.phone_number}
                 />
+                <FormControl fullWidth>
+                  <InputLabel>역할</InputLabel>
+                  <Select
+                    value={formData.role}
+                    label="역할"
+                    onChange={(e) => setFormData((p) => ({ ...p, role: e.target.value }))}
+                  >
+                    {Object.entries(ADMIN_ROLE_LABELS).map(([value, label]) => (
+                      <MenuItem key={value} value={value}>
+                        {label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
                 <Stack direction="row" spacing={2}>
                   <Button type="submit" variant="contained" disabled={createAdminMutation.isPending}>
                     {createAdminMutation.isPending ? <CircularProgress size={24} /> : '등록'}

@@ -30,9 +30,10 @@ import {
   Tooltip,
   InputAdornment,
 } from '@mui/material';
-import { MdAdd as AddIcon, MdDelete as DeleteIcon, MdRefresh as RefreshIcon, MdVisibility as VisibilityIcon, MdSearch as SearchIcon, MdFilterList as FilterIcon, MdAdminPanelSettings as AdminIcon } from 'react-icons/md';
+import { MdAdd as AddIcon, MdDelete as DeleteIcon, MdRefresh as RefreshIcon, MdVisibility as VisibilityIcon, MdEdit as EditIcon, MdSearch as SearchIcon, MdFilterList as FilterIcon, MdAdminPanelSettings as AdminIcon } from 'react-icons/md';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminAdminsApi } from '../../lib/api/admin';
+import { ADMIN_ROLE_LABELS } from '../../constants/adminRoles';
 import MainCard from '../../components/MainCard';
 import AnimateButton from '../../components/@extended/AnimateButton';
 import ExtendedAvatar from '../../components/@extended/Avatar';
@@ -275,6 +276,7 @@ const AdminManagePage = () => {
                 <TableCell width="60" align="center">번호</TableCell>
                 <TableCell>관리자</TableCell>
                 <TableCell>이메일</TableCell>
+                <TableCell>역할</TableCell>
                 <TableCell>상태</TableCell>
                 <TableCell>등록일</TableCell>
                 <TableCell align="center" width="120">액션</TableCell>
@@ -283,7 +285,7 @@ const AdminManagePage = () => {
             <TableBody>
               {admins.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
+                  <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
                     <Stack spacing={2} alignItems="center">
                       <Box
                         sx={{
@@ -340,6 +342,14 @@ const AdminManagePage = () => {
                     </TableCell>
                     <TableCell>
                       <Chip
+                        label={ADMIN_ROLE_LABELS[admin.role] || admin.role || '-'}
+                        size="small"
+                        variant="outlined"
+                        sx={{ fontSize: '0.75rem' }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip
                         label={getStatusLabel(admin.status)}
                         color={getStatusColor(admin.status)}
                         size="small"
@@ -360,6 +370,17 @@ const AdminManagePage = () => {
                             <VisibilityIcon size={20} />
                           </IconButton>
                         </Tooltip>
+                        {currentAdmin?.role === 'SUPER_ADMIN' && (
+                          <Tooltip title="수정">
+                            <IconButton
+                              size="small"
+                              onClick={() => navigate(`/admins/${admin.id}/edit`)}
+                              color="primary"
+                            >
+                              <EditIcon size={20} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                         <Tooltip
                           title={
                             currentAdmin?.id === admin.id

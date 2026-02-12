@@ -19,6 +19,19 @@ import {
 } from 'react-icons/md';
 
 /**
+ * API 등에서 이중 인코딩된 HTML 복원 (예: &lt;p&gt; -> <p>)
+ */
+function decodeHtmlEntities(str) {
+  if (!str || typeof str !== 'string') return str;
+  return str
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
+/**
  * TipTap 리치 텍스트 에디터 컴포넌트
  * @param {string} initialValue - 초기 HTML 콘텐츠
  * @param {function} onChange - 콘텐츠 변경 시 호출 (html) => void
@@ -36,6 +49,7 @@ function TipTapEditor({
   editorRef: externalEditorRef,
 }) {
   const editorInstanceRef = useRef(null);
+  const decodedInitial = decodeHtmlEntities(initialValue || '');
   const handleImageUpload = useCallback(
     async (file) => {
       if (onImageUpload) {
@@ -70,7 +84,7 @@ function TipTapEditor({
       }),
       Placeholder.configure({ placeholder }),
     ],
-    content: initialValue || '',
+    content: decodedInitial,
     editorProps: {
       attributes: {
         style: `min-height: ${height}px;`,
@@ -132,13 +146,13 @@ function TipTapEditor({
 
   // initialValue 변경 시 내용 업데이트 (편집 모드 - API에서 데이터 로드 시)
   useEffect(() => {
-    if (!editor || !initialValue) return;
+    if (!editor || !decodedInitial) return;
     const html = editor.getHTML();
     const isEmpty = html === '' || html === '<p></p>' || html === '<p><br></p>';
-    if (isEmpty && initialValue.trim() !== '') {
-      editor.commands.setContent(initialValue, false);
+    if (isEmpty && decodedInitial.trim() !== '') {
+      editor.commands.setContent(decodedInitial, false);
     }
-  }, [editor, initialValue]);
+  }, [editor, decodedInitial]);
 
   if (!editor) return null;
 

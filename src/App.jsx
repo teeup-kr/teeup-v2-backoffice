@@ -33,6 +33,7 @@ import UserCreatePage from './pages/user/UserCreatePage';
 import AdminManagePage from './pages/admin/AdminManagePage';
 import AdminDetailPage from './pages/admin/AdminDetailPage';
 import AdminCreatePage from './pages/admin/AdminCreatePage';
+import AdminEditPage from './pages/admin/AdminEditPage';
 
 // Club management pages
 import ClubListPage from './pages/clubs/ClubListPage';
@@ -130,6 +131,7 @@ function App() {
             <Route path="admins" element={<AdminManagePage />} />
             <Route path="admins/create" element={<AdminCreatePage />} />
             <Route path="admins/:id" element={<AdminDetailPage />} />
+            <Route path="admins/:id/edit" element={<AdminEditPage />} />
 
             {/* Club management */}
             <Route path="clubs" element={<ClubListPage />} />
