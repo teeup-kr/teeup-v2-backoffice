@@ -108,11 +108,13 @@ const ClubDetailPage = () => {
   const [newStatus, setNewStatus] = useState('');
   const [statusReason, setStatusReason] = useState('');
   
-  // 멤버 목록 필터 및 페이지네이션 상태
+  // 멤버 목록 필터 및 페이지네이션 상태 (서버 필터용)
   const [memberSearchTerm, setMemberSearchTerm] = useState('');
   const [activeMemberSearchTerm, setActiveMemberSearchTerm] = useState('');
   const [memberRoleFilter, setMemberRoleFilter] = useState('');
   const [activeMemberRoleFilter, setActiveMemberRoleFilter] = useState('');
+  const [memberStatusFilter, setMemberStatusFilter] = useState('');
+  const [activeMemberStatusFilter, setActiveMemberStatusFilter] = useState('');
   const [memberPage, setMemberPage] = useState(0);
   const [memberRowsPerPage, setMemberRowsPerPage] = useState(10);
   
@@ -165,13 +167,18 @@ const ClubDetailPage = () => {
     enabled: !!id,
   });
 
-  // 클럽 멤버 목록 조회
+  // 클럽 멤버 목록 조회 (검색/역할/상태 필터 서버 적용)
+  const memberFilterParams = {
+    search: activeMemberSearchTerm || undefined,
+    role_filter: activeMemberRoleFilter || undefined,
+    status_filter: activeMemberStatusFilter || undefined,
+  };
   const {
     data: members,
     isLoading: membersLoading
   } = useQuery({
-    queryKey: ['admin-club-members', id],
-    queryFn: () => clubsApi.getClubMembers(id),
+    queryKey: ['admin-club-members', id, memberFilterParams],
+    queryFn: () => clubsApi.getClubMembers(id, memberFilterParams),
     enabled: !!id,
   });
 
@@ -264,8 +271,10 @@ const ClubDetailPage = () => {
     switch (status) {
       case 'ACTIVE': return '활성';
       case 'INACTIVE': return '비활성';
-      case 'APPROVED': return '활성';  // 기존 데이터 호환을 위해 '활성'으로 표시
+      case 'APPROVED': return '활성';  // 기존 데이터 호환
       case 'PENDING': return '대기중';
+      case 'SUSPENDED': return '정지';
+      case 'CANCELED': return '해지';
       case 'REJECTED': return '거절';
       default: return status || '알 수 없음';
     }
@@ -275,6 +284,7 @@ const ClubDetailPage = () => {
   const handleMemberSearch = () => {
     setActiveMemberSearchTerm(memberSearchTerm);
     setActiveMemberRoleFilter(memberRoleFilter);
+    setActiveMemberStatusFilter(memberStatusFilter);
     setMemberPage(0);
   };
 
@@ -298,6 +308,8 @@ const ClubDetailPage = () => {
     setActiveMemberSearchTerm('');
     setMemberRoleFilter('');
     setActiveMemberRoleFilter('');
+    setMemberStatusFilter('');
+    setActiveMemberStatusFilter('');
     setMemberPage(0);
   };
 
@@ -431,29 +443,11 @@ const ClubDetailPage = () => {
     }
   };
 
-  // 멤버 필터링 및 정렬 로직
+  // 멤버 필터링 및 정렬 로직 (서버에서 이미 검색/역할/상태 필터 적용됨, 클라이언트는 정렬만)
   const getFilteredMembers = () => {
     if (!members?.members) return [];
-    
-    let filtered = [...members.members];
-    
-    // 가입일 순으로 정렬 (최신순)
-    filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    
-    // 역할 필터 적용
-    if (activeMemberRoleFilter && activeMemberRoleFilter !== 'ALL') {
-      filtered = filtered.filter(m => m.role === activeMemberRoleFilter);
-    }
-    
-    // 실명 검색 적용
-    if (activeMemberSearchTerm) {
-      const searchLower = activeMemberSearchTerm.toLowerCase();
-      filtered = filtered.filter(m => 
-        m.user_realname?.toLowerCase().includes(searchLower)
-      );
-    }
-    
-    return filtered;
+    const sorted = [...members.members].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    return sorted;
   };
 
   // 페이지네이션 적용
@@ -980,14 +974,14 @@ const ClubDetailPage = () => {
               </AnimateButton>
             </Stack>
             <Divider />
-            <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+            <Stack direction="row" spacing={2} sx={{ mb: 2 }} flexWrap="wrap" useFlexGap>
               <TextField
-                placeholder="실명으로 검색"
+                placeholder="닉네임·이메일·실명·전화번호 검색"
                 value={memberSearchTerm}
                 onChange={(e) => setMemberSearchTerm(e.target.value)}
                 onKeyPress={handleMemberSearchKeyPress}
                 size="small"
-                sx={{ minWidth: 250 }}
+                sx={{ minWidth: 260 }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -996,7 +990,7 @@ const ClubDetailPage = () => {
                   ),
                 }}
               />
-              <FormControl size="small" sx={{ minWidth: 150 }}>
+              <FormControl size="small" sx={{ minWidth: 120 }}>
                 <InputLabel>역할</InputLabel>
                 <Select
                   value={memberRoleFilter}
@@ -1007,6 +1001,21 @@ const ClubDetailPage = () => {
                   <MenuItem value="MEMBER">일반회원</MenuItem>
                   <MenuItem value="MANAGER">매니저</MenuItem>
                   <MenuItem value="LEADER">리더</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 120 }}>
+                <InputLabel>상태</InputLabel>
+                <Select
+                  value={memberStatusFilter}
+                  onChange={(e) => setMemberStatusFilter(e.target.value)}
+                  label="상태"
+                >
+                  <MenuItem value="">전체</MenuItem>
+                  <MenuItem value="ACTIVE">활성</MenuItem>
+                  <MenuItem value="PENDING">대기</MenuItem>
+                  <MenuItem value="INACTIVE">비활성</MenuItem>
+                  <MenuItem value="SUSPENDED">정지</MenuItem>
+                  <MenuItem value="CANCELED">해지</MenuItem>
                 </Select>
               </FormControl>
               <Button
@@ -1151,6 +1160,45 @@ const ClubDetailPage = () => {
                 <Typography variant="h6">멤버 관리</Typography>
             </Stack>
             <Divider />
+            <Stack direction="row" spacing={2} sx={{ mb: 2 }} flexWrap="wrap" useFlexGap>
+              <TextField
+                placeholder="닉네임·이메일·실명·전화번호 검색"
+                value={memberSearchTerm}
+                onChange={(e) => setMemberSearchTerm(e.target.value)}
+                onKeyPress={handleMemberSearchKeyPress}
+                size="small"
+                sx={{ minWidth: 260 }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <FormControl size="small" sx={{ minWidth: 120 }}>
+                <InputLabel>역할</InputLabel>
+                <Select value={memberRoleFilter} onChange={(e) => setMemberRoleFilter(e.target.value)} label="역할">
+                  <MenuItem value="">전체</MenuItem>
+                  <MenuItem value="MEMBER">일반회원</MenuItem>
+                  <MenuItem value="MANAGER">매니저</MenuItem>
+                  <MenuItem value="LEADER">리더</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 120 }}>
+                <InputLabel>상태</InputLabel>
+                <Select value={memberStatusFilter} onChange={(e) => setMemberStatusFilter(e.target.value)} label="상태">
+                  <MenuItem value="">전체</MenuItem>
+                  <MenuItem value="ACTIVE">활성</MenuItem>
+                  <MenuItem value="PENDING">대기</MenuItem>
+                  <MenuItem value="INACTIVE">비활성</MenuItem>
+                  <MenuItem value="SUSPENDED">정지</MenuItem>
+                  <MenuItem value="CANCELED">해지</MenuItem>
+                </Select>
+              </FormControl>
+              <Button variant="contained" onClick={handleMemberSearch} startIcon={<SearchIcon />}>검색</Button>
+              <Button variant="outlined" onClick={handleMemberReset} startIcon={<RefreshIcon />}>초기화</Button>
+            </Stack>
             {membersLoading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
                 <CircularProgress />
