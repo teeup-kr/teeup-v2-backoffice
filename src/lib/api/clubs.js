@@ -354,10 +354,20 @@ export const clubsApi = {
   /**
    * 클럽 멤버 목록 조회 (관리자용)
    * @param {string} clubId - 클럽 ID
+   * @param {Object} [params] - 검색/필터 파라미터
+   * @param {string} [params.search] - 닉네임/이메일/실명/전화번호 검색
+   * @param {string} [params.role_filter] - 역할: LEADER, MANAGER, MEMBER
+   * @param {string} [params.status_filter] - 상태: ACTIVE, PENDING, INACTIVE
    * @returns {Promise<ClubMembersResponse>}
    */
-  getClubMembers: async (clubId) => {
-    const response = await apiClient.get(`/v1/admin/clubs/${clubId}/members`);
+  getClubMembers: async (clubId, params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.search) queryParams.append('search', params.search);
+    if (params.role_filter) queryParams.append('role_filter', params.role_filter);
+    if (params.status_filter) queryParams.append('status_filter', params.status_filter);
+    const qs = queryParams.toString();
+    const url = qs ? `/v1/admin/clubs/${clubId}/members?${qs}` : `/v1/admin/clubs/${clubId}/members`;
+    const response = await apiClient.get(url);
     return response.data;
   },
 
