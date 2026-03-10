@@ -714,20 +714,20 @@ export const adminRoundsApi = {
     }
   },
 
-  // 라운딩 참가자 목록 조회
+  // 라운딩 참가자 목록 조회 (관리자용 - 어드민 라우터 사용)
   getRoundParticipants: async (roundId) => {
     try {
-      const response = await apiClient.get(`/rounds/${roundId}/participants`);
+      const response = await apiClient.get(`/admin/meetings/${roundId}/participants`);
       return response.data;
     } catch (error) {
       throw handleApiError(error);
     }
   },
 
-  // 라운딩 팀 목록 조회
+  // 라운딩 팀 목록 조회 (관리자용 - 어드민 라우터 사용)
   getRoundTeams: async (roundId) => {
     try {
-      const response = await apiClient.get(`/teams/`, { params: { meeting_id: roundId } });
+      const response = await apiClient.get(`/admin/meetings/${roundId}/teams`);
       return response.data;
     } catch (error) {
       throw handleApiError(error);
