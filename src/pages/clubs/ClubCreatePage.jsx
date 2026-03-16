@@ -750,7 +750,7 @@ const ClubCreatePage = () => {
                   </ListItemButton>
                 ))}
                 {usersData?.users?.length === 0 && (
-                  <Box sx={{ p: 3, textAlign: 'center' }}>
+                  <Box sx={{ py: 3, px: 0, textAlign: 'center' }}>
                     <Typography variant="body2" color="textSecondary">
                       검색 결과가 없습니다.
                     </Typography>

@@ -174,7 +174,7 @@ export default function NotificationsPage() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ py: 3, px: 0 }}>
       <Card>
         <CardContent>
           {/* 헤더 */}

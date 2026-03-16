@@ -150,7 +150,7 @@ const RoundTeamManagementPage = () => {
 
   if (roundError || !round) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ py: 3, px: 0 }}>
         <Alert severity="error">라운딩 정보를 불러올 수 없습니다.</Alert>
         <Button onClick={() => navigate('/rounds')} sx={{ mt: 2 }}>라운딩 목록으로</Button>
       </Box>
@@ -160,7 +160,7 @@ const RoundTeamManagementPage = () => {
   const roundData = round.data || round;
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ py: 3, px: 0 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
         <Button startIcon={<ArrowLeft />} onClick={() => navigate(`/rounds/${id}`)} sx={{ mr: 2 }}>
           돌아가기

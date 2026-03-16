@@ -202,7 +202,7 @@ const NoticeEditPage = () => {
 
   if (isLoadingNotice) {
     return (
-      <Box sx={{ p: 3, display: "flex", justifyContent: "center", alignItems: "center", minHeight: "400px" }}>
+      <Box sx={{ py: 3, px: 0, display: "flex", justifyContent: "center", alignItems: "center", minHeight: "400px" }}>
         <CircularProgress />
       </Box>
     );
@@ -210,7 +210,7 @@ const NoticeEditPage = () => {
 
   if (noticeError || !notice) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ py: 3, px: 0 }}>
         <Alert severity="error" sx={{ mb: 2 }}>
           공지사항을 불러오는 중 오류가 발생했습니다.
         </Alert>
@@ -226,7 +226,7 @@ const NoticeEditPage = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ py: 3, px: 0 }}>
       <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="h4" gutterBottom>
           공지사항 수정

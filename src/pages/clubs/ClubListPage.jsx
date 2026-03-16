@@ -40,7 +40,6 @@ import {
 import { clubsApi } from '../../lib/api/clubs';
 import MainCard from '../../components/MainCard';
 import AnimateButton from '../../components/@extended/AnimateButton';
-import ExtendedAvatar from '../../components/@extended/Avatar';
 import { 
   MdAdd as Plus, 
   MdSearch as Search, 
@@ -434,6 +433,7 @@ const ClubListPage = () => {
           <Table>
             <TableHead>
               <TableRow>
+                <TableCell>ID</TableCell>
                 <TableCell>클럽</TableCell>
                 <TableCell>설명</TableCell>
                 <TableCell>리더</TableCell>
@@ -446,7 +446,7 @@ const ClubListPage = () => {
           <TableBody>
             {clubs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
+                <TableCell colSpan={8} align="center" sx={{ py: 8 }}>
                   <Stack spacing={2} alignItems="center">
                     <Box
                       sx={{
@@ -488,35 +488,30 @@ const ClubListPage = () => {
               clubs.map((club) => (
               <TableRow key={club.id} hover>
                 <TableCell>
-                  <Stack direction="row" alignItems="center" spacing={1}>
-                    <ExtendedAvatar
-                      alt={club.name}
-                      src={club.logo_url}
-                      color="primary"
-                      size="sm"
+                  <Typography variant="body2" fontWeight="500">
+                    {club.club_id ?? club.id}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Box>
+                    <Typography
+                      variant="subtitle2"
+                      fontWeight="600"
+                      onClick={() => handleViewClub(club)}
+                      sx={{
+                        cursor: 'pointer',
+                        color: 'primary.main',
+                        '&:hover': {
+                          textDecoration: 'underline'
+                        }
+                      }}
                     >
-                      <GroupIcon />
-                    </ExtendedAvatar>
-                    <Box>
-                      <Typography 
-                        variant="subtitle2" 
-                        fontWeight="600"
-                        onClick={() => handleViewClub(club)}
-                        sx={{
-                          cursor: 'pointer',
-                          color: 'primary.main',
-                          '&:hover': {
-                            textDecoration: 'underline'
-                          }
-                        }}
-                      >
-                        {club.name}
-                      </Typography>
-                      <Typography variant="body2" color="textSecondary">
-                        {getTypeLabel(club.type)}
-                      </Typography>
-                    </Box>
-                  </Stack>
+                      {club.name}
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      {getTypeLabel(club.type)}
+                    </Typography>
+                  </Box>
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>

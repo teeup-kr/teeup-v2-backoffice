@@ -598,7 +598,7 @@ const UserDetailPage = () => {
 
   if (userError || !user) {
     return (
-      <Box p={3}>
+      <Box py={3} px={0}>
         <Alert severity="error" sx={{ mb: 2 }}>
           {userError?.message || '사용자 정보를 불러올 수 없습니다.'}
         </Alert>
@@ -614,7 +614,7 @@ const UserDetailPage = () => {
   }
 
   return (
-    <Box p={3}>
+    <Box py={3} px={0}>
       {/* Header */}
       <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
         <Box display="flex" alignItems="center">

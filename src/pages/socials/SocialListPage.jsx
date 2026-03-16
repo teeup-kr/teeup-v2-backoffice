@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Box,
   Typography,
@@ -27,25 +27,31 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogContentText,
   DialogActions,
   Button
 } from '@mui/material';
-import { MdVisibility as ViewIcon, MdEdit as EditIcon, MdAdd as AddIcon, MdFilterList as FilterIcon, MdSearch as SearchIcon, MdRefresh as RefreshIcon, MdNote as NoteIcon } from 'react-icons/md';
+import { MdVisibility as ViewIcon, MdEdit as EditIcon, MdDelete as DeleteIcon, MdAdd as AddIcon, MdFilterList as FilterIcon, MdSearch as SearchIcon, MdRefresh as RefreshIcon, MdNote as NoteIcon } from 'react-icons/md';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { useSnackbar } from '../../contexts/SnackbarContext';
 import { adminSocialsApi } from '../../lib/api/admin';
 import MainCard from '../../components/MainCard';
 import AnimateButton from '../../components/@extended/AnimateButton';
 
 const SocialListPage = () => {
   const navigate = useNavigate();
-  
+  const queryClient = useQueryClient();
+  const { showSnackbar } = useSnackbar();
+
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [memoDialogOpen, setMemoDialogOpen] = useState(false);
   const [selectedMemo, setSelectedMemo] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [socialToDelete, setSocialToDelete] = useState(null);
 
   // 소셜 모임 목록 조회
   const { data: socialsData, isLoading, error: queryError } = useQuery({
@@ -61,6 +67,32 @@ const SocialListPage = () => {
 
   const socials = Array.isArray(socialsData?.data) ? socialsData.data : [];
   const totalCount = socialsData?.total || 0;
+
+  // 소셜 모임 삭제 뮤테이션
+  const deleteSocialMutation = useMutation({
+    mutationFn: (socialId) => adminSocialsApi.deleteSocial(socialId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-socials'] });
+      setDeleteDialogOpen(false);
+      setSocialToDelete(null);
+      showSnackbar('소셜 모임이 삭제되었습니다.', 'success');
+    },
+    onError: (error) => {
+      const message = error.response?.data?.detail || error.response?.data?.message || '소셜 모임 삭제에 실패했습니다.';
+      showSnackbar(message, 'error');
+    },
+  });
+
+  const handleOpenDeleteDialog = (social) => {
+    setSocialToDelete(social);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (socialToDelete) {
+      deleteSocialMutation.mutate(socialToDelete.id);
+    }
+  };
 
   // 상태별 색상 매핑
   const getStatusColor = (status) => {
@@ -184,7 +216,7 @@ const SocialListPage = () => {
             <Button
               variant="contained"
               startIcon={<AddIcon />}
-              onClick={() => navigate('/meetings/create?type=SOCIAL')}
+              onClick={() => navigate('/socials/create')}
             >
               소셜 모임 생성
             </Button>
@@ -349,6 +381,15 @@ const SocialListPage = () => {
                               <EditIcon />
                             </IconButton>
                           </Tooltip>
+                          <Tooltip title="삭제">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleOpenDeleteDialog(social)}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </Tooltip>
                         </Stack>
                       </TableCell>
                     </TableRow>
@@ -387,6 +428,28 @@ const SocialListPage = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseMemo}>닫기</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 삭제 확인 다이얼로그 */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>소셜 모임 삭제</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            정말로 소셜 모임 &quot;{socialToDelete?.name}&quot;을(를) 삭제하시겠습니까?<br />
+            삭제된 소셜 모임은 복구할 수 없습니다.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>취소</Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={handleConfirmDelete}
+            disabled={deleteSocialMutation.isPending}
+          >
+            {deleteSocialMutation.isPending ? '삭제 중...' : '삭제'}
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

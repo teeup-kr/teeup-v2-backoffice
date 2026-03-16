@@ -100,7 +100,7 @@ const SocialCreatePage = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ py: 3, px: 0 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
         <Button startIcon={<ArrowLeft />} onClick={() => navigate('/socials')} sx={{ mr: 2 }}>
           돌아가기

@@ -157,7 +157,7 @@ const ClubFeesPage = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ py: 3, px: 0 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
         <Stack direction="row" alignItems="center" spacing={2}>
           <IconButton onClick={() => navigate(`/clubs/${id}`)} size="small">

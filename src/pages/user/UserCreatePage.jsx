@@ -310,7 +310,7 @@ const UserCreatePage = () => {
   const statuses = formDataResponse?.data?.statuses || ['ACTIVE', 'DEACTIVATED', 'DELETED'];
 
   return (
-    <Box p={3}>
+    <Box py={3} px={0}>
       {/* Header */}
       <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
         <Box display="flex" alignItems="center">

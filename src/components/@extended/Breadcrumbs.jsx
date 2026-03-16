@@ -103,7 +103,7 @@ export default function Breadcrumbs({
         if (lastSegment === 'edit') {
           itemTitle = '수정';
         }
-        else if (lastSegment === 'create') {
+        else if (lastSegment === 'create' || lastSegment === 'new') {
           itemTitle = '생성';
         }
         

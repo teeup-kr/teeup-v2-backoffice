@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Box,
   Typography,
@@ -27,25 +27,31 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogContentText,
   DialogActions,
   Button
 } from '@mui/material';
-import { MdVisibility as ViewIcon, MdEdit as EditIcon, MdAdd as AddIcon, MdFilterList as FilterIcon, MdSearch as SearchIcon, MdRefresh as RefreshIcon, MdNote as NoteIcon } from 'react-icons/md';
+import { MdVisibility as ViewIcon, MdEdit as EditIcon, MdDelete as DeleteIcon, MdAdd as AddIcon, MdFilterList as FilterIcon, MdSearch as SearchIcon, MdRefresh as RefreshIcon, MdNote as NoteIcon } from 'react-icons/md';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { useSnackbar } from '../../contexts/SnackbarContext';
 import { adminRoundsApi } from '../../lib/api/admin';
 import MainCard from '../../components/MainCard';
 import AnimateButton from '../../components/@extended/AnimateButton';
 
 const RoundListPage = () => {
   const navigate = useNavigate();
-  
+  const queryClient = useQueryClient();
+  const { showSnackbar } = useSnackbar();
+
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [memoDialogOpen, setMemoDialogOpen] = useState(false);
   const [selectedMemo, setSelectedMemo] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [roundToDelete, setRoundToDelete] = useState(null);
 
   // 라운딩 목록 조회
   const { data: roundsData, isLoading, error: queryError } = useQuery({
@@ -61,6 +67,32 @@ const RoundListPage = () => {
 
   const rounds = Array.isArray(roundsData?.data) ? roundsData.data : [];
   const totalCount = roundsData?.total || 0;
+
+  // 라운딩 삭제 뮤테이션
+  const deleteRoundMutation = useMutation({
+    mutationFn: (roundId) => adminRoundsApi.deleteRound(roundId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-rounds'] });
+      setDeleteDialogOpen(false);
+      setRoundToDelete(null);
+      showSnackbar('라운딩이 삭제되었습니다.', 'success');
+    },
+    onError: (error) => {
+      const message = error.response?.data?.detail || error.response?.data?.message || '라운딩 삭제에 실패했습니다.';
+      showSnackbar(message, 'error');
+    },
+  });
+
+  const handleOpenDeleteDialog = (round) => {
+    setRoundToDelete(round);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (roundToDelete) {
+      deleteRoundMutation.mutate(roundToDelete.id);
+    }
+  };
 
   // 상태별 색상 매핑
   const getStatusColor = (status) => {
@@ -355,6 +387,15 @@ const RoundListPage = () => {
                               <EditIcon />
                             </IconButton>
                           </Tooltip>
+                          <Tooltip title="삭제">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleOpenDeleteDialog(round)}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </Tooltip>
                         </Stack>
                       </TableCell>
                     </TableRow>
@@ -393,6 +434,28 @@ const RoundListPage = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseMemo}>닫기</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 삭제 확인 다이얼로그 */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>라운딩 삭제</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            정말로 라운딩 &quot;{roundToDelete?.name}&quot;을(를) 삭제하시겠습니까?<br />
+            삭제된 라운딩은 복구할 수 없습니다.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>취소</Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={handleConfirmDelete}
+            disabled={deleteRoundMutation.isPending}
+          >
+            {deleteRoundMutation.isPending ? '삭제 중...' : '삭제'}
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

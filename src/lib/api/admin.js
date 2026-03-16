@@ -732,6 +732,16 @@ export const adminRoundsApi = {
     } catch (error) {
       throw handleApiError(error);
     }
+  },
+
+  // 라운딩(모임) 삭제
+  deleteRound: async (roundId) => {
+    try {
+      const response = await apiClient.delete(`/admin/meetings/${roundId}`);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
   }
 };
 
@@ -761,6 +771,16 @@ export const adminSocialsApi = {
   getSocialParticipants: async (socialId) => {
     try {
       const response = await apiClient.get(`/admin/meetings/${socialId}/participants`);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // 소셜 모임 삭제
+  deleteSocial: async (socialId) => {
+    try {
+      const response = await apiClient.delete(`/admin/meetings/${socialId}`);
       return response.data;
     } catch (error) {
       throw handleApiError(error);

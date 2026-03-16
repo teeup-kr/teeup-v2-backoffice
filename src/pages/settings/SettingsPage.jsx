@@ -26,7 +26,7 @@ function TabPanel({ children, value, index, ...other }) {
       aria-labelledby={`settings-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && <Box sx={{ py: 3, px: 0 }}>{children}</Box>}
     </div>
   );
 }
@@ -216,7 +216,7 @@ const SettingsPage = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ py: 3, px: 0 }}>
       <Typography variant="h4" gutterBottom>
         관리자 설정
       </Typography>
