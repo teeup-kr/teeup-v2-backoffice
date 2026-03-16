@@ -233,7 +233,7 @@ const SocialExpenseManagementPage = () => {
 
   if (socialError || !social) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ py: 3, px: 0 }}>
         <Alert severity="error">소셜 모임 정보를 불러올 수 없습니다.</Alert>
         <Button onClick={() => navigate('/socials')} sx={{ mt: 2 }}>
           소셜 모임 목록으로
@@ -245,7 +245,7 @@ const SocialExpenseManagementPage = () => {
   const socialData = social.data || social;
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ py: 3, px: 0 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
         <Button startIcon={<ArrowLeft />} onClick={() => navigate(`/socials/${id}`)} sx={{ mr: 2 }}>
           돌아가기

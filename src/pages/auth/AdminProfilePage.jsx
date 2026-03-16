@@ -123,7 +123,7 @@ const AdminProfilePage = () => {
 
   if (isLoading && !adminData) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ py: 3, px: 0 }}>
         <Skeleton variant="text" width={200} height={40} sx={{ mb: 3 }} />
         <Grid container spacing={3}>
           <Grid item xs={12} md={8}>
@@ -149,7 +149,7 @@ const AdminProfilePage = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ py: 3, px: 0 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
         <Typography variant="h4" fontWeight={600}>
           관리자 프로필

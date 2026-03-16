@@ -191,7 +191,7 @@ const RoundDetailPage = () => {
 
   if (roundError || !round) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ py: 3, px: 0 }}>
         <Alert severity="error">
           라운딩 정보를 불러올 수 없습니다.
         </Alert>
@@ -212,7 +212,7 @@ const RoundDetailPage = () => {
   const settlement = settlementData?.settlement;
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ py: 3, px: 0 }}>
       {/* 헤더 */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>

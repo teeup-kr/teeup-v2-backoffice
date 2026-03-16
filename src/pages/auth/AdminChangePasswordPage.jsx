@@ -138,7 +138,7 @@ const AdminChangePasswordPage = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ py: 3, px: 0 }}>
       <Typography variant="h4" gutterBottom>
         비밀번호 변경
       </Typography>

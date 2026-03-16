@@ -202,7 +202,7 @@ const ClubEditPage = () => {
 
   if (clubError || !club) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ py: 3, px: 0 }}>
         <Alert severity="error">
           클럽 정보를 불러오는데 실패했습니다.
         </Alert>

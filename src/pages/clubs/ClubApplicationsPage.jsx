@@ -151,7 +151,7 @@ const ClubApplicationsPage = () => {
 
   if (applicationsError) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ py: 3, px: 0 }}>
         <Alert severity="error">
           클럽 신청 목록을 불러오는데 실패했습니다.
         </Alert>

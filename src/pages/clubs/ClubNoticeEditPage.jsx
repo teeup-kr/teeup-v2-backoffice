@@ -101,7 +101,7 @@ const ClubNoticeEditPage = () => {
 
   if (!notice) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ py: 3, px: 0 }}>
         <Typography color="error">공지사항을 찾을 수 없습니다.</Typography>
         <Button sx={{ mt: 2 }} onClick={() => navigate(`/clubs/${id}/notices`)}>
           목록으로
@@ -111,7 +111,7 @@ const ClubNoticeEditPage = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ py: 3, px: 0 }}>
       <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
         <Button startIcon={<ArrowLeft />} onClick={() => navigate(`/clubs/${id}/notices`)} variant="outlined" size="small">
           목록

@@ -76,7 +76,7 @@ const ClubNoticeCreatePage = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ py: 3, px: 0 }}>
       <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
         <Button startIcon={<ArrowLeft />} onClick={() => navigate(`/clubs/${id}`)} variant="outlined" size="small">
           목록

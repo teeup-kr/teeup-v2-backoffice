@@ -162,12 +162,12 @@ function App() {
             <Route path="rounds/:id/scores" element={<RoundScoreManagementPage />} />
             <Route path="rounds/:id/teams" element={<RoundTeamManagementPage />} />
 
-            {/* Social management */}
-            <Route path="socials" element={<SocialListPage />} />
+            {/* Social management - 더 구체적인 경로를 먼저 선언 */}
             <Route path="socials/create" element={<SocialCreatePage />} />
-            <Route path="socials/:id" element={<SocialDetailPage />} />
             <Route path="socials/:id/edit" element={<SocialEditPage />} />
             <Route path="socials/:id/expenses" element={<SocialExpenseManagementPage />} />
+            <Route path="socials/:id" element={<SocialDetailPage />} />
+            <Route path="socials" element={<SocialListPage />} />
 
             {/* Notice management */}
             <Route path="notices" element={<NoticeListPage />} />

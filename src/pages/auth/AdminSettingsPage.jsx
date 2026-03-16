@@ -73,16 +73,18 @@ const AdminSettingsPage = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  // 설정 데이터 로드
+  // 설정 데이터 로드 (getCurrentAdmin은 axios 응답이므로 res.data에서 페이로드 추출)
   useEffect(() => {
     const loadSettings = async () => {
       try {
         setIsLoading(true);
-        const admin = await authApi.getCurrentAdmin();
+        const res = await authApi.getCurrentAdmin();
+        const payload = res?.data ?? res;
+        const admin = payload?.data ?? payload;
         setProfileSettings({
-          name: admin.name || '',
-          email: admin.email || '',
-          phone: admin.phone || '',
+          name: admin?.name || '',
+          email: admin?.email || '',
+          phone: admin?.phone || '',
         });
         
         // 현재로는 별도 API에서 설정을 가져오지 않음
@@ -311,7 +313,7 @@ const AdminSettingsPage = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ py: 3, px: 0 }}>
       <Typography variant="h4" gutterBottom>
         관리자 설정
       </Typography>
