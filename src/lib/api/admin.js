@@ -724,6 +724,76 @@ export const adminRoundsApi = {
     }
   },
 
+  /** 라운딩 참가자별 점수(총타/홀 합산) 목록 — GET /admin/meetings/:id/scores */
+  getRoundScores: async (roundId) => {
+    try {
+      const response = await apiClient.get(`/admin/meetings/${roundId}/scores`);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  /** 참가자 총타 저장 — PUT /admin/meetings/:id/scores/:participantId, body: { score } */
+  updateRoundParticipantScore: async (roundId, participantId, data) => {
+    try {
+      const response = await apiClient.put(`/admin/meetings/${roundId}/scores/${participantId}`, data);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  /** 참가자 홀별 스코어 목록 — GET */
+  getParticipantHoleScores: async (meetingId, participantId) => {
+    try {
+      const response = await apiClient.get(
+        `/admin/meetings/${meetingId}/participants/${participantId}/hole-scores`
+      );
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  /** 홀별 스코어 추가 — POST body: { hole_number, strokes, par, score_to_par? } */
+  createParticipantHoleScore: async (meetingId, participantId, data) => {
+    try {
+      const response = await apiClient.post(
+        `/admin/meetings/${meetingId}/participants/${participantId}/hole-scores`,
+        data
+      );
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  /** 홀별 스코어 수정 — PUT */
+  updateParticipantHoleScore: async (meetingId, participantId, scoreId, data) => {
+    try {
+      const response = await apiClient.put(
+        `/admin/meetings/${meetingId}/participants/${participantId}/hole-scores/${scoreId}`,
+        data
+      );
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  /** 홀별 스코어 삭제 */
+  deleteParticipantHoleScore: async (meetingId, participantId, scoreId) => {
+    try {
+      const response = await apiClient.delete(
+        `/admin/meetings/${meetingId}/participants/${participantId}/hole-scores/${scoreId}`
+      );
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
   // 라운딩 팀 목록 조회 (관리자용 - 어드민 라우터 사용)
   getRoundTeams: async (roundId) => {
     try {

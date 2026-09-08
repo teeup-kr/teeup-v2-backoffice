@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -8,22 +8,19 @@ import {
   CircularProgress,
   Alert,
   TextField,
-  FormControlLabel,
-  Checkbox,
   Stack,
   Divider,
-  FormGroup,
-  ToggleButton,
-  ToggleButtonGroup,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem
+  IconButton
 } from '@mui/material';
-import { MdArrowBack as ArrowLeft, MdSave as SaveIcon } from 'react-icons/md';
+import { MdArrowBack as ArrowLeft, MdSave as SaveIcon, MdAdd as AddIcon, MdDelete as DeleteIcon } from 'react-icons/md';
 import { adminRoundsApi, adminMeetingSettlementApi } from '../../lib/api/admin';
 import MainCard from '../../components/MainCard';
 import { useSnackbar } from '../../contexts/SnackbarContext';
+
+const newOtherExpenseRowKey = () =>
+  typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `other-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 const RoundExpenseManagementPage = () => {
   const { id } = useParams();
@@ -35,27 +32,20 @@ const RoundExpenseManagementPage = () => {
     green_fee: 0,
     caddy_fee: 0,
     cart_fee: 0,
-    other_fee: 0,
     notes: '',
+    /** 기타 비용 행: { _key, title, amount, memo } */
     other_expense_items: [],
     exclude_remaining_amount: false,
-    // n분의1: 전체 정산 대상자 (그린/캐디/카트 동일)
-    settlement_targets: [],
     // 개별정산: 항목별 정산 대상자
     green_fee_participants: [],
     caddy_fee_participants: [],
     cart_fee_participants: [],
     other_fee_participants: [],
-    // 전체 정산 방식: 'equal' = n분의1, 'individual' = 개별정산
     settlement_split: 'equal',
-    // 나머지 10원 부담자 (n분의1일 때, user_id 또는 guest_id)
-    extra_payer_id: null,
-    // 개별정산 시 비용별 참가자 금액
     green_fee_amounts: {},
     caddy_fee_amounts: {},
     cart_fee_amounts: {},
     other_fee_amounts: {},
-    // 개별정산 시 항목별 나머지 10원 부담자 (user_id 또는 guest_id)
     green_fee_extra_payer_id: null,
     caddy_fee_extra_payer_id: null,
     cart_fee_extra_payer_id: null,
@@ -128,190 +118,126 @@ const RoundExpenseManagementPage = () => {
       const c = toParticipantIds(settlement.caddy_fee_participants);
       const k = toParticipantIds(settlement.cart_fee_participants);
       const oItems = Array.isArray(settlement.other_expense_items) ? settlement.other_expense_items : [];
-      const oFirst = oItems.find((it) => Number(it.amount || 0) > 0);
-      const o = oFirst ? toParticipantIds(oFirst.participants || []) : [];
-      const all = [...new Set([...g, ...c, ...k, ...o])];
+      const oPids = [];
+      for (const it of oItems) {
+        oPids.push(...toParticipantIds(it.participants || []));
+      }
+      const o = [...new Set(oPids)];
+
+      let mappedOther = oItems.map((it, i) => ({
+        _key: `load-${settlement.id ?? 's'}-${i}-${newOtherExpenseRowKey()}`,
+        title: it.title ?? '',
+        amount: it.amount ?? '',
+        memo: it.memo ?? '',
+      }));
+      if (mappedOther.length === 0 && Number(settlement.other_fee || 0) > 0) {
+        mappedOther = [
+          {
+            _key: newOtherExpenseRowKey(),
+            title: '기타 비용',
+            amount: settlement.other_fee,
+            memo: '',
+          },
+        ];
+      }
+
       setFormData((prev) => ({
         ...prev,
         green_fee: settlement.green_fee ?? 0,
         caddy_fee: settlement.caddy_fee ?? 0,
         cart_fee: settlement.cart_fee ?? 0,
-        other_fee: settlement.other_fee ?? 0,
         notes: settlement.notes ?? '',
-        settlement_targets: all.length > 0 ? all : (g.length ? g : c.length ? c : k),
         green_fee_participants: g,
         caddy_fee_participants: c,
         cart_fee_participants: k,
         other_fee_participants: o,
-        other_expense_items: Array.isArray(settlement.other_expense_items) ? settlement.other_expense_items : [],
+        other_expense_items: mappedOther,
         exclude_remaining_amount: !!settlement.exclude_remaining_amount,
-        extra_payer_id: settlement.extra_payer_id ?? null,
       }));
     } else if (settlement && participants.length === 0) {
+      const oItems0 = Array.isArray(settlement.other_expense_items) ? settlement.other_expense_items : [];
+      let mappedOther0 = oItems0.map((it, i) => ({
+        _key: `load-${settlement.id ?? 's'}-${i}-${newOtherExpenseRowKey()}`,
+        title: it.title ?? '',
+        amount: it.amount ?? '',
+        memo: it.memo ?? '',
+      }));
+      if (mappedOther0.length === 0 && Number(settlement.other_fee || 0) > 0) {
+        mappedOther0 = [
+          {
+            _key: newOtherExpenseRowKey(),
+            title: '기타 비용',
+            amount: settlement.other_fee,
+            memo: '',
+          },
+        ];
+      }
       setFormData((prev) => ({
         ...prev,
         green_fee: settlement.green_fee ?? 0,
         caddy_fee: settlement.caddy_fee ?? 0,
         cart_fee: settlement.cart_fee ?? 0,
-        other_fee: settlement.other_fee ?? 0,
         notes: settlement.notes ?? '',
-        other_expense_items: Array.isArray(settlement.other_expense_items) ? settlement.other_expense_items : [],
+        other_expense_items: mappedOther0,
         exclude_remaining_amount: !!settlement.exclude_remaining_amount,
-        extra_payer_id: settlement.extra_payer_id ?? null,
       }));
     }
   }, [settlement, participants]);
 
+  const otherExpenseSum = (Array.isArray(formData.other_expense_items) ? formData.other_expense_items : []).reduce(
+    (sum, it) => sum + Number(it.amount === '' || it.amount === null || it.amount === undefined ? 0 : it.amount || 0),
+    0
+  );
   const totalCost =
     Number(formData.green_fee || 0) +
     Number(formData.caddy_fee || 0) +
     Number(formData.cart_fee || 0) +
-    Number(formData.other_fee || 0) +
-    (Array.isArray(formData.other_expense_items)
-      ? formData.other_expense_items.reduce((sum, it) => sum + Number(it.amount || 0), 0)
-      : 0);
+    otherExpenseSum;
 
   const handleFeeChange = (field) => (e) => {
     const v = e.target.value;
     setFormData((p) => ({ ...p, [field]: v === '' ? 0 : Number(v) }));
   };
 
-  const isEqual = (formData.settlement_split || 'equal') === 'equal';
-  const pids = isEqual ? (formData.settlement_targets || []) : [];
+  const isEqual = true;
+  /** n분의1: 정산 대상은 참가자 전원 (선택 UI 없음) */
+  const pids = useMemo(
+    () =>
+      participants
+        .map((p) => p.participant_id ?? (p.is_guest ? `guest-${p.id}` : `user-${p.id}`))
+        .filter((id) => id != null && id !== ''),
+    [participants]
+  );
 
-  const handleSettlementTargetToggle = (participantId) => () => {
-    setFormData((prev) => {
-      const arr = [...(prev.settlement_targets || [])];
-      const idx = arr.indexOf(participantId);
-      if (idx >= 0) arr.splice(idx, 1);
-      else arr.push(participantId);
-      return { ...prev, settlement_targets: arr };
+  const setOtherExpenseItemField = (rowKey, field, value) => {
+    setFormData((p) => {
+      const items = [...(p.other_expense_items || [])];
+      const i = items.findIndex((x) => x._key === rowKey);
+      if (i < 0) return p;
+      items[i] = { ...items[i], [field]: value };
+      return { ...p, other_expense_items: items };
     });
   };
 
-  const handleFeeParticipantToggle = (feeKey) => (participantId) => () => {
-    setFormData((prev) => {
-      const field = `${feeKey}_participants`;
-      const amountsKey = `${feeKey}_amounts`;
-      const arr = [...(prev[field] || [])];
-      const idx = arr.indexOf(participantId);
-      if (idx >= 0) arr.splice(idx, 1);
-      else arr.push(participantId);
-      const next = { ...prev, [field]: arr };
-      const fee = Number(prev[feeKey] || 0);
-      if (arr.length > 0 && fee > 0) {
-        const per = Math.floor(fee / arr.length);
-        const remainder = fee - per * arr.length;
-        const amounts = {};
-        arr.forEach((pid, i) => {
-          amounts[pid] = i === 0 ? per + remainder : per;
-        });
-        next[amountsKey] = amounts;
-      } else {
-        next[amountsKey] = {};
-      }
-      return next;
-    });
-  };
-
-  const handleSplitChange = (e, value) => {
-    if (value == null) return;
-    setFormData((prev) => {
-      const next = { ...prev, settlement_split: value };
-      if (value === 'individual') {
-        const g = prev.green_fee_participants?.length ? prev.green_fee_participants : (prev.settlement_targets || []);
-        const c = prev.caddy_fee_participants?.length ? prev.caddy_fee_participants : (prev.settlement_targets || []);
-        const k = prev.cart_fee_participants?.length ? prev.cart_fee_participants : (prev.settlement_targets || []);
-        const o = prev.other_fee_participants?.length ? prev.other_fee_participants : (prev.settlement_targets || []);
-        next.green_fee_participants = [...g];
-        next.caddy_fee_participants = [...c];
-        next.cart_fee_participants = [...k];
-        next.other_fee_participants = [...o];
-        const initFeeAmounts = (fk, pids_) => {
-          const fee = Number(prev[fk] || 0);
-          if (fee <= 0 || !pids_.length) return {};
-          const per = Math.floor(fee / pids_.length);
-          const remainder = fee - per * pids_.length;
-          const amounts = {};
-          pids_.forEach((pid, i) => {
-            amounts[pid] = i === 0 ? per + remainder : per;
-          });
-          return amounts;
-        };
-        next.green_fee_amounts = initFeeAmounts('green_fee', g);
-        next.caddy_fee_amounts = initFeeAmounts('caddy_fee', c);
-        next.cart_fee_amounts = initFeeAmounts('cart_fee', k);
-        next.other_fee_amounts = initFeeAmounts('other_fee', o);
-      } else {
-        const g = prev.green_fee_participants || [];
-        const c = prev.caddy_fee_participants || [];
-        const k = prev.cart_fee_participants || [];
-        const o = prev.other_fee_participants || [];
-        next.settlement_targets = [...new Set([...g, ...c, ...k, ...o])];
-      }
-      return next;
-    });
-  };
-
-  const handleFeeAmountChange = (feeKey) => (participantId) => (e) => {
-    const v = e.target.value;
-    const num = v === '' ? 0 : Number(v);
-    const amountsKey = `${feeKey}_amounts`;
-    setFormData((prev) => ({
-      ...prev,
-      [amountsKey]: {
-        ...(prev[amountsKey] || {}),
-        [participantId]: num < 0 ? 0 : num,
-      },
+  const addOtherExpenseRow = () => {
+    setFormData((p) => ({
+      ...p,
+      other_expense_items: [
+        ...(p.other_expense_items || []),
+        { _key: newOtherExpenseRowKey(), title: '', amount: '', memo: '' },
+      ],
     }));
   };
 
-  const getParticipantById = (participantId) => {
-    return participants.find((p) => {
-      const id = p.participant_id ?? (p.is_guest ? `guest-${p.id}` : `user-${p.id}`);
-      return id === participantId || String(id) === String(participantId);
-    });
-  };
-
-  const amountPerPerson = pids.length > 0 ? Math.floor(totalCost / pids.length) : 0;
-
-  const getFeePids = (feeKey) => (isEqual ? pids : (formData[`${feeKey}_participants`] || []));
-
-  const getFeeAmountsSum = (feeKey) => {
-    const amounts = formData[`${feeKey}_amounts`] || {};
-    const feePids = getFeePids(feeKey);
-    return feePids.reduce((sum, pid) => sum + Number(amounts[pid] || 0), 0);
-  };
-
-  const toAmountsArray = (feeKey) => {
-    const amounts = formData[`${feeKey}_amounts`] || {};
-    const feePids = getFeePids(feeKey);
-    return feePids
-      .map((pid) => ({ participant_id: Number(pid), amount: Number(amounts[pid] || 0) }))
-      .filter((x) => !Number.isNaN(x.participant_id));
+  const removeOtherExpenseRow = (rowKey) => {
+    setFormData((p) => ({
+      ...p,
+      other_expense_items: (p.other_expense_items || []).filter((x) => x._key !== rowKey),
+    }));
   };
 
   const validateForm = () => {
     const newErrors = {};
-    if (isEqual) {
-      if (pids.length === 0) newErrors.settlement_targets = '정산 대상자를 선택해주세요.';
-    } else {
-      const feeLabels = { green_fee: '그린피', caddy_fee: '캐디피', cart_fee: '카트비', other_fee: '기타 비용' };
-      ['green_fee', 'caddy_fee', 'cart_fee', 'other_fee'].forEach((feeKey) => {
-        const fee = Number(formData[feeKey] || 0);
-        const feePids = getFeePids(feeKey);
-        if (fee > 0) {
-          if (feePids.length === 0) {
-            newErrors[`${feeKey}_participants`] = `${feeLabels[feeKey]} 정산 대상자를 선택해주세요.`;
-          } else {
-            const sum = getFeeAmountsSum(feeKey);
-            if (sum !== fee) {
-              newErrors[`${feeKey}_amounts`] = `${feeLabels[feeKey]} 분담 합계(${sum.toLocaleString()}원)가 금액(${fee.toLocaleString()}원)과 일치하지 않습니다.`;
-            }
-          }
-        }
-      });
-    }
     const generalMsg = Object.values(newErrors)[0];
     setErrors({ ...newErrors, general: generalMsg || null });
     if (Object.keys(newErrors).length > 0) {
@@ -325,48 +251,48 @@ const RoundExpenseManagementPage = () => {
     if (!validateForm()) return;
 
     const toIds = (arr) => (arr || []).map((pid) => Number(pid));
+    const otherItemsPayload = (formData.other_expense_items || [])
+      .filter((it) => Number(it.amount === '' || it.amount === null || it.amount === undefined ? 0 : it.amount || 0) > 0)
+      .map((it) => ({
+        title: String(it.title || '').trim() || '기타',
+        amount: Number(it.amount || 0),
+        memo: (() => {
+          const m = String(it.memo || '').trim();
+          return m.length > 0 ? m : null;
+        })(),
+        participant_ids: toIds(pids),
+        participant_amounts: [],
+        extra_payer_id: null,
+      }));
+    const otherFeeSum = otherItemsPayload.reduce((s, x) => s + x.amount, 0);
     const payload = {
       total_cost: totalCost,
       green_fee: Number(formData.green_fee || 0),
       caddy_fee: Number(formData.caddy_fee || 0),
       cart_fee: Number(formData.cart_fee || 0),
-      other_fee: Number(formData.other_fee || 0),
+      other_fee: otherFeeSum,
       notes: formData.notes || '',
       green_fee_participant_ids: isEqual ? toIds(pids) : toIds(formData.green_fee_participants),
       green_fee_participants: [],
       green_fee_exempted: [],
-      green_fee_amounts: !isEqual ? toAmountsArray('green_fee') : [],
-      green_fee_extra_payer_id: !isEqual && (formData.green_fee_extra_payer_id ?? (getParticipantById(formData.green_fee_participants?.[0])?.id ?? formData.green_fee_participants?.[0])) || null,
+      green_fee_amounts: [],
+      green_fee_extra_payer_id: null,
       caddy_fee_participant_ids: isEqual ? toIds(pids) : toIds(formData.caddy_fee_participants),
       caddy_fee_participants: [],
       caddy_fee_exempted: [],
-      caddy_fee_amounts: !isEqual ? toAmountsArray('caddy_fee') : [],
-      caddy_fee_extra_payer_id: !isEqual && (formData.caddy_fee_extra_payer_id ?? (getParticipantById(formData.caddy_fee_participants?.[0])?.id ?? formData.caddy_fee_participants?.[0])) || null,
+      caddy_fee_amounts: [],
+      caddy_fee_extra_payer_id: null,
       cart_fee_participant_ids: isEqual ? toIds(pids) : toIds(formData.cart_fee_participants),
       cart_fee_participants: [],
       cart_fee_exempted: [],
-      cart_fee_amounts: !isEqual ? toAmountsArray('cart_fee') : [],
-      cart_fee_extra_payer_id: !isEqual && (formData.cart_fee_extra_payer_id ?? (getParticipantById(formData.cart_fee_participants?.[0])?.id ?? formData.cart_fee_participants?.[0])) || null,
-      other_expense_items: (() => {
-        const items = [];
-        const oFee = Number(formData.other_fee || 0);
-        if (oFee > 0) {
-          items.push({
-            title: '기타 비용',
-            amount: oFee,
-            participant_ids: isEqual ? toIds(pids) : toIds(formData.other_fee_participants),
-            participant_amounts: !isEqual ? toAmountsArray('other_fee') : [],
-            extra_payer_id: !isEqual && (formData.other_fee_extra_payer_id ?? (getParticipantById(formData.other_fee_participants?.[0])?.id ?? formData.other_fee_participants?.[0])) || null,
-          });
-        }
-        const rest = (formData.other_expense_items || []).filter((it) => it.title !== '기타 비용' || Number(it.amount || 0) !== oFee);
-        return [...items, ...rest];
-      })(),
+      cart_fee_amounts: [],
+      cart_fee_extra_payer_id: null,
+      other_expense_items: otherItemsPayload,
       total_cost_participants: [],
       total_cost_exempted: [],
       exempted_participants: [],
       exclude_remaining_amount: formData.exclude_remaining_amount || false,
-      extra_payer_id: formData.extra_payer_id ?? (pids.length > 0 ? (getParticipantById(pids[0])?.id ?? pids[0]) : null),
+      extra_payer_id: null,
       settlement_method: isEqual ? 'EQUAL_SPLIT' : 'INDIVIDUAL',
       all_covered_by_fee: false,
       green_fee_covered_by_fee: false,
@@ -376,116 +302,19 @@ const RoundExpenseManagementPage = () => {
     createMutation.mutate(payload);
   };
 
-  const FeeSection = ({ feeKey, label }) => {
-    const fee = Number(formData[feeKey] || 0);
-    const feePids = getFeePids(feeKey);
-    const amounts = formData[`${feeKey}_amounts`] || {};
-    const sum = getFeeAmountsSum(feeKey);
-    const amountError = errors[`${feeKey}_amounts`];
-    const participantError = errors[`${feeKey}_participants`];
-
-    return (
-      <Box>
-        <TextField
-          fullWidth
-          type="number"
-          label={`${label} (원)`}
-          value={formData[feeKey] || ''}
-          onChange={handleFeeChange(feeKey)}
-          inputProps={{ min: 0 }}
-          sx={{ mt: 1, maxWidth: 240 }}
-        />
-        {!isEqual && fee > 0 && (
-          <>
-            <Box sx={{ mt: 1 }}>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                {label} 정산 대상자
-              </Typography>
-              <FormGroup row>
-                {participants.map((p) => {
-                  const participantId = p.participant_id ?? (p.is_guest ? `guest-${p.id}` : `user-${p.id}`);
-                  const checked = feePids.indexOf(participantId) >= 0;
-                  return (
-                    <FormControlLabel
-                      key={participantId}
-                      control={
-                        <Checkbox
-                          checked={checked}
-                          onChange={handleFeeParticipantToggle(feeKey)(participantId)}
-                          size="small"
-                        />
-                      }
-                      label={`${p.name}${p.is_guest ? ' (게스트)' : ''}`}
-                    />
-                  );
-                })}
-              </FormGroup>
-              {participantError && (
-                <Typography variant="caption" color="error">{participantError}</Typography>
-              )}
-            </Box>
-            {feePids.length > 0 && (
-              <>
-                <FormControl fullWidth size="small" sx={{ mt: 1, maxWidth: 280 }}>
-                  <InputLabel id={`extra-payer-${feeKey}-label`}>{label} 나머지 10원 부담자</InputLabel>
-                  <Select
-                    labelId={`extra-payer-${feeKey}-label`}
-                    value={formData[`${feeKey}_extra_payer_id`] ?? (feePids[0] ? (getParticipantById(feePids[0])?.id ?? feePids[0]) : '')}
-                    label={`${label} 나머지 10원 부담자`}
-                    onChange={(e) => setFormData((p) => ({ ...p, [`${feeKey}_extra_payer_id`]: e.target.value }))}
-                  >
-                    {feePids.map((pid) => {
-                      const p = getParticipantById(pid);
-                      const name = p ? `${p.name}${p.is_guest ? ' (게스트)' : ''}` : `참가자#${pid}`;
-                      const val = p?.id ?? pid;
-                      return (
-                        <MenuItem key={pid} value={val}>
-                          {name}
-                        </MenuItem>
-                      );
-                    })}
-                  </Select>
-                </FormControl>
-                <Box sx={{ mt: 1.5, p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
-                  {label} 분담 내역
-                </Typography>
-                <Stack spacing={0.5}>
-                  {feePids.map((pid) => {
-                    const p = getParticipantById(pid);
-                    const name = p ? `${p.name}${p.is_guest ? ' (게스트)' : ''}` : `참가자#${pid}`;
-                    return (
-                      <Box key={pid} sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                        <Typography variant="body2" sx={{ minWidth: 100 }}>{name}</Typography>
-                        <TextField
-                          type="number"
-                          size="small"
-                          value={amounts[pid] ?? ''}
-                          onChange={handleFeeAmountChange(feeKey)(pid)}
-                          inputProps={{ min: 0 }}
-                          sx={{ width: 120 }}
-                          placeholder="금액"
-                        />
-                        <Typography variant="body2" color="text.secondary">원</Typography>
-                      </Box>
-                    );
-                  })}
-                  <Typography variant="caption" color={sum === fee ? 'text.secondary' : 'error'}>
-                    합계: {sum.toLocaleString()}원
-                    {sum !== fee && ` (목표: ${fee.toLocaleString()}원)`}
-                  </Typography>
-                  {amountError && (
-                    <Typography variant="caption" color="error">{amountError}</Typography>
-                  )}
-                </Stack>
-              </Box>
-              </>
-            )}
-          </>
-        )}
-      </Box>
-    );
-  };
+  const FeeSection = ({ feeKey, label }) => (
+    <Box>
+      <TextField
+        fullWidth
+        type="number"
+        label={`${label} (원)`}
+        value={formData[feeKey] || ''}
+        onChange={handleFeeChange(feeKey)}
+        inputProps={{ min: 0 }}
+        sx={{ mt: 1, maxWidth: 240 }}
+      />
+    </Box>
+  );
 
   if (roundLoading) {
     return (
@@ -540,117 +369,74 @@ const RoundExpenseManagementPage = () => {
         </Alert>
       )}
 
-      <MainCard title="비용 및 정산 대상자">
+      <MainCard title="비용">
         <Stack spacing={3}>
           {/* 비용 입력 */}
           <FeeSection feeKey="green_fee" label="그린피" />
           <FeeSection feeKey="caddy_fee" label="캐디피" />
           <FeeSection feeKey="cart_fee" label="카트비" />
-          <FeeSection feeKey="other_fee" label="기타 비용" />
+
+          <Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              기타 비용
+            </Typography>
+            <Stack spacing={2}>
+              {(formData.other_expense_items || []).map((row) => (
+                <Box
+                  key={row._key}
+                  sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'flex-start' }}
+                >
+                  <TextField
+                    size="small"
+                    label="항목명"
+                    value={row.title ?? ''}
+                    onChange={(e) => setOtherExpenseItemField(row._key, 'title', e.target.value)}
+                    sx={{ flex: '1 1 140px', minWidth: 120 }}
+                  />
+                  <TextField
+                    size="small"
+                    type="number"
+                    label="가격 (원)"
+                    value={row.amount === '' || row.amount === null || row.amount === undefined ? '' : row.amount}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setOtherExpenseItemField(row._key, 'amount', raw === '' ? '' : Number(raw));
+                    }}
+                    inputProps={{ min: 0 }}
+                    sx={{ width: 150 }}
+                  />
+                  <TextField
+                    size="small"
+                    label="메모"
+                    value={row.memo ?? ''}
+                    onChange={(e) => setOtherExpenseItemField(row._key, 'memo', e.target.value)}
+                    sx={{ flex: '1 1 200px', minWidth: 160 }}
+                  />
+                  <IconButton
+                    aria-label="기타 비용 항목 제거"
+                    color="error"
+                    size="small"
+                    onClick={() => removeOtherExpenseRow(row._key)}
+                    sx={{ mt: 0.5 }}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Box>
+              ))}
+            </Stack>
+            <Button type="button" variant="outlined" startIcon={<AddIcon />} onClick={addOtherExpenseRow} sx={{ mt: 1 }}>
+              기타 비용 항목 추가
+            </Button>
+          </Box>
 
           <Divider />
 
-          {/* 정산 방식 */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-            <Typography variant="body2" color="text.secondary">
-              정산 방식:
+          <Alert severity="info" sx={{ alignItems: 'flex-start' }}>
+            <Typography variant="body2" component="div">
+              라운딩 정산은 <strong>n분의 1</strong> 방식만 지원합니다. 참가자 전원에게 총 비용(그린피·캐디피·카트비·기타 등 합산)이 균등하게
+              나누어집니다. 나머지 금액 배분은 시스템에서 처리합니다.
             </Typography>
-            <ToggleButtonGroup
-              value={formData.settlement_split || 'equal'}
-              exclusive
-              onChange={handleSplitChange}
-              size="small"
-              sx={{ '& .MuiToggleButton-root': { py: 0.25, px: 1.5 } }}
-            >
-              <ToggleButton value="equal">n분의 1</ToggleButton>
-              <ToggleButton value="individual">개별 정산</ToggleButton>
-            </ToggleButtonGroup>
-            <Typography variant="caption" color="text.secondary">
-              (n분의 1: 총 비용 ÷ 인원수 / 개별 정산: 항목별 정산 대상자 선택)
-            </Typography>
-          </Box>
-
-          {/* 정산 대상자 (n분의 1일 때만) */}
-          {isEqual && (
-            <Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                정산 대상자
-              </Typography>
-              <FormGroup row>
-                {participants.map((p) => {
-                  const participantId = p.participant_id ?? (p.is_guest ? `guest-${p.id}` : `user-${p.id}`);
-                  const checked = pids.indexOf(participantId) >= 0;
-                  return (
-                    <FormControlLabel
-                      key={participantId}
-                      control={
-                        <Checkbox
-                          checked={checked}
-                          onChange={handleSettlementTargetToggle(participantId)}
-                          size="small"
-                        />
-                      }
-                      label={`${p.name}${p.is_guest ? ' (게스트)' : ''}`}
-                    />
-                  );
-                })}
-              </FormGroup>
-              {errors.settlement_targets && (
-                <Typography variant="caption" color="error">
-                  {errors.settlement_targets}
-                </Typography>
-              )}
-            </Box>
-          )}
-
-          {/* 분담 내역 (n분의 1일 때만) */}
-          {(formData.settlement_split || 'equal') === 'equal' && pids.length > 0 && totalCost >= 0 && (
-            <>
-              <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
-                  분담 내역
-                </Typography>
-                <Typography variant="body2">
-                  {pids.map((pid) => {
-                    const p = getParticipantById(pid);
-                    const name = p ? `${p.name}${p.is_guest ? ' (게스트)' : ''}` : `참가자#${pid}`;
-                    return (
-                      <span key={pid}>
-                        {name}: {amountPerPerson.toLocaleString()}원
-                        {pids.indexOf(pid) < pids.length - 1 ? ', ' : ''}
-                      </span>
-                    );
-                  })}
-                  <Typography variant="caption" color="text.secondary" component="span" sx={{ display: 'block', mt: 0.5 }}>
-                    (총 {totalCost.toLocaleString()}원 ÷ {pids.length}명 = 1인당 {amountPerPerson.toLocaleString()}원)
-                  </Typography>
-                </Typography>
-              </Box>
-              <FormControl fullWidth size="small" sx={{ mt: 1, maxWidth: 320 }}>
-                <InputLabel id="extra-payer-label">나머지 10원 부담자</InputLabel>
-                <Select
-                  labelId="extra-payer-label"
-                  value={formData.extra_payer_id ?? (pids.length > 0 ? (getParticipantById(pids[0])?.id ?? pids[0]) : '')}
-                  label="나머지 10원 부담자"
-                  onChange={(e) => setFormData((p) => ({ ...p, extra_payer_id: e.target.value }))}
-                >
-                  {pids.map((pid) => {
-                    const p = getParticipantById(pid);
-                    const name = p ? `${p.name}${p.is_guest ? ' (게스트)' : ''}` : `참가자#${pid}`;
-                    const val = p?.id ?? pid;
-                    return (
-                      <MenuItem key={pid} value={val}>
-                        {name}
-                      </MenuItem>
-                    );
-                  })}
-                </Select>
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
-                  금액이 나누어떨어지지 않을 때 10원 단위 나머지를 부담할 참가자 (미선택 시 자동 배분)
-                </Typography>
-              </FormControl>
-            </>
-          )}
+          </Alert>
 
           <Divider />
 
