@@ -1548,7 +1548,7 @@ const ClubDetailPage = () => {
         <DialogTitle>클럽 삭제 확인</DialogTitle>
         <DialogContent>
           <Typography>
-            정말로 이 클럽을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+            정말로 클럽을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
           </Typography>
         </DialogContent>
         <DialogActions>

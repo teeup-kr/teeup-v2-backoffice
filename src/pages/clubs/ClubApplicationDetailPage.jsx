@@ -380,7 +380,7 @@ const ClubApplicationDetailPage = () => {
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <Typography variant="body2" color="text.secondary">
-              이 클럽 신청을 거부하시겠습니까?
+              클럽 신청을 거부하시겠습니까?
             </Typography>
             <TextField
               fullWidth
