@@ -45,9 +45,8 @@ const SocialEditPage = () => {
     meeting_date: '',
     meeting_time: '',
     location: '',
-    fee: 0,
     max_participants: 0,
-    additional_info: '',
+    social_notes: '',
     status: 'SCHEDULED',
     club_id: '',
     venue_name: '',
@@ -92,9 +91,8 @@ const SocialEditPage = () => {
         meeting_date: datePart,
         meeting_time: timePart,
         location: raw.location || '',
-        fee: raw.fee ?? 0,
         max_participants: raw.max_participants ?? 0,
-        additional_info: raw.additional_info || '',
+        social_notes: raw.social_notes ?? raw.socialNotes ?? '',
         status: raw.status || 'SCHEDULED',
         club_id: raw.club_id || '',
         venue_name: raw.venue_name || '',
@@ -127,7 +125,10 @@ const SocialEditPage = () => {
     if (!formData.description?.trim()) newErrors.description = '모임 설명을 입력해주세요.';
     if (!formData.meeting_date) newErrors.meeting_date = '모임 날짜를 선택해주세요.';
     if (!formData.meeting_time) newErrors.meeting_time = '모임 시간을 입력해주세요.';
-    if (Number(formData.max_participants) <= 0) newErrors.max_participants = '최대 참가자 수는 1명 이상이어야 합니다.';
+    const mp = Number(formData.max_participants);
+    if (!Number.isFinite(mp) || mp < 0) {
+      newErrors.max_participants = '최대 참가자 수는 0 이상의 숫자로 입력해주세요.';
+    }
     if (!formData.venue_name?.trim()) newErrors.venue_name = '장소명을 입력해주세요.';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -148,12 +149,12 @@ const SocialEditPage = () => {
       description: formData.description.trim(),
       meeting_time: meetingTime,
       location: formData.location?.trim() || undefined,
-      fee: Number(formData.fee) || 0,
+      fee: 0,
       max_participants: Number(formData.max_participants) || 0,
-      additional_info: formData.additional_info?.trim() || undefined,
       status: formData.status,
       club_id: formData.club_id || undefined,
       venue_name: formData.venue_name.trim(),
+      social_notes: (formData.social_notes ?? '').trim(),
     });
   };
 
@@ -277,25 +278,19 @@ const SocialEditPage = () => {
                     value={formData.max_participants}
                     onChange={handleInputChange('max_participants')}
                     error={!!errors.max_participants}
-                    helperText={errors.max_participants}
-                    inputProps={{ min: 1 }}
+                    helperText={errors.max_participants || '0일 경우 전체 참가(인원 제한 없음)입니다.'}
+                    inputProps={{ min: 0 }}
                     required
                   />
                   <TextField
                     fullWidth
-                    label="참가비 (원)"
-                    type="number"
-                    value={formData.fee}
-                    onChange={handleInputChange('fee')}
-                    inputProps={{ min: 0 }}
-                  />
-                  <TextField
-                    fullWidth
-                    label="추가 정보"
-                    value={formData.additional_info}
-                    onChange={handleInputChange('additional_info')}
+                    label="운영진용 메모"
+                    value={formData.social_notes}
+                    onChange={handleInputChange('social_notes')}
                     multiline
-                    rows={3}
+                    rows={4}
+                    placeholder="참가자에게는 보이지 않으며 백오피스·앱 운영진 화면에서만 확인할 수 있습니다."
+                    helperText="참가자에게 보이지 않습니다. 정산·운영 참고용으로만 사용하세요."
                   />
                 </Stack>
               </CardContent>

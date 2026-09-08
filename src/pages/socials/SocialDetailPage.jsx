@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   Typography,
   Button,
@@ -14,14 +14,9 @@ import {
   CardContent,
   Avatar,
   Paper,
-  Stack,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField
+  Stack
 } from '@mui/material';
-import { MdArrowBack as ArrowLeft, MdPerson as PersonIcon, MdEdit as EditIcon, MdAttachMoney as ExpenseIcon, MdCheckCircle as CheckIcon } from 'react-icons/md';
+import { MdArrowBack as ArrowLeft, MdPerson as PersonIcon, MdEdit as EditIcon, MdAttachMoney as ExpenseIcon } from 'react-icons/md';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { adminSocialsApi, adminMeetingSettlementApi } from '../../lib/api/admin';
@@ -59,55 +54,9 @@ const SocialDetailPage = () => {
     queryKey: ['admin-social-settlement', id],
     queryFn: () => adminMeetingSettlementApi.getMeetingSettlement(id),
     enabled: !!id && !!social,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
-
-  const queryClient = useQueryClient();
-  const [payModalOpen, setPayModalOpen] = useState(false);
-  const [payTarget, setPayTarget] = useState(null);
-  const [payAmount, setPayAmount] = useState('');
-
-  const markPaidMutation = useMutation({
-    mutationFn: ({ meetingId, expenseId, data }) =>
-      adminMeetingSettlementApi.markParticipantPaid(meetingId, expenseId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-social-settlement', id] });
-      setPayModalOpen(false);
-      setPayTarget(null);
-      setPayAmount('');
-    },
-    onError: (err) => {
-      console.error('납부 완료 처리 실패:', err);
-    },
-  });
-
-  const handleOpenPayModal = (p) => {
-    setPayTarget(p);
-    setPayAmount(p?.amount_paid != null ? String(p.amount_paid) : '');
-    setPayModalOpen(true);
-  };
-
-  const handleMarkPaid = () => {
-    if (!payTarget || !settlementData?.settlement) return;
-    const expenseId = settlementData.settlement.id;
-    const data = {
-      user_id: payTarget.user_id || null,
-      guest_id: payTarget.guest_id || null,
-      is_paid: true,
-      amount_paid: payAmount ? parseFloat(payAmount) : null,
-    };
-    markPaidMutation.mutate({ meetingId: id, expenseId, data });
-  };
-
-  const handleMarkUnpaid = () => {
-    if (!payTarget || !settlementData?.settlement) return;
-    const expenseId = settlementData.settlement.id;
-    const data = {
-      user_id: payTarget.user_id || null,
-      guest_id: payTarget.guest_id || null,
-      is_paid: false,
-    };
-    markPaidMutation.mutate({ meetingId: id, expenseId, data });
-  };
 
   // 날짜 포맷팅
   const formatDate = (dateString) => {
@@ -195,7 +144,29 @@ const SocialDetailPage = () => {
     );
   }
 
-  const socialData = social.data || social;
+  const rawSocial = social?.data ?? social;
+  const socialData = {
+    ...rawSocial,
+    social_notes: rawSocial?.social_notes ?? rawSocial?.socialNotes ?? '',
+  };
+
+  const staffMemoDisplay = String(socialData.social_notes ?? '').trim();
+
+  /** max_participants: 양수 = 정원, 0 = 전체 참가(제한 없음). 0이면 `current/-`가 되지 않도록 표기 */
+  const formatParticipantCapacityLabel = (current, max) => {
+    const c = Number(current) || 0;
+    if (max == null || max === '') {
+      return `${c}명`;
+    }
+    const m = Number(max);
+    if (Number.isNaN(m)) {
+      return `${c}명`;
+    }
+    if (m === 0) {
+      return `${c}명 (전체 참가 · 인원 제한 없음)`;
+    }
+    return `${c}/${m}명`;
+  };
 
   const participants = participantsData || [];
   const settlement = settlementData?.settlement;
@@ -307,7 +278,7 @@ const SocialDetailPage = () => {
                     참가자 수
                   </Typography>
                   <Typography variant="body1" sx={{ mt: 0.5 }}>
-                    {socialData.participant_count || 0}/{socialData.max_participants || '-'}명
+                    {formatParticipantCapacityLabel(socialData.participant_count, socialData.max_participants)}
                   </Typography>
                 </Grid>
 
@@ -343,6 +314,22 @@ const SocialDetailPage = () => {
                     </Typography>
                   </Grid>
                 )}
+
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary">
+                    운영진용 메모
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
+                    참가자에게는 표시되지 않습니다. (앱·백오피스 운영자 참고)
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    color={staffMemoDisplay ? 'text.primary' : 'text.secondary'}
+                    sx={{ mt: 0.5, whiteSpace: 'pre-wrap', bgcolor: 'action.hover', p: 1.5, borderRadius: 1 }}
+                  >
+                    {staffMemoDisplay || '—'}
+                  </Typography>
+                </Grid>
               </Grid>
             </CardContent>
           </Card>
@@ -661,31 +648,52 @@ const SocialDetailPage = () => {
                       <Grid container spacing={1}>
                         {settlement.expense_items.map((item, idx) => (
                           <Grid item xs={12} key={idx}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                              <Typography variant="body2">
-                                {item.title || `항목 ${idx + 1}`}: {item.amount?.toLocaleString() || 0}원
-                              </Typography>
-                              {item.participants && item.participants.length > 0 && (
-                                <Typography variant="caption" color="text.secondary">
-                                  (참가자 {item.participants.length}명)
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                <Typography variant="body2">
+                                  {item.title || `항목 ${idx + 1}`}: {item.amount?.toLocaleString() || 0}원
                                 </Typography>
-                              )}
+                                {(() => {
+                                  const covered = !!(item.covered_by_fee ?? item.coveredByFee);
+                                  if (covered) {
+                                    return (
+                                      <Chip size="small" label="회비 처리" color="info" variant="outlined" />
+                                    );
+                                  }
+                                  if (settlement.exclude_remaining_amount) {
+                                    return (
+                                      <Chip
+                                        size="small"
+                                        label="전체회비 정산"
+                                        variant="outlined"
+                                        sx={{ borderColor: 'text.disabled', color: 'text.secondary' }}
+                                      />
+                                    );
+                                  }
+                                  return (
+                                    <Chip
+                                      size="small"
+                                      label="개인 분담"
+                                      variant="outlined"
+                                      color="default"
+                                    />
+                                  );
+                                })()}
+                                {item.participants && item.participants.length > 0 && (
+                                  <Typography variant="caption" color="text.secondary">
+                                    (참가자 {item.participants.length}명)
+                                  </Typography>
+                                )}
+                              </Box>
+                              {item.memo ? (
+                                <Typography variant="caption" color="text.secondary" sx={{ pl: 0.5, whiteSpace: 'pre-wrap' }}>
+                                  메모: {item.memo}
+                                </Typography>
+                              ) : null}
                             </Box>
                           </Grid>
                         ))}
                       </Grid>
-                    </Grid>
-                  )}
-                  
-                  {/* 나머지 금액 정산 제외 여부 */}
-                  {settlement.exclude_remaining_amount !== undefined && (
-                    <Grid item xs={12}>
-                      <Typography variant="body2" color="text.secondary">
-                        나머지 금액 정산 제외
-                      </Typography>
-                      <Typography variant="body1" sx={{ mt: 0.5 }}>
-                        {settlement.exclude_remaining_amount ? '예' : '아니오'}
-                      </Typography>
                     </Grid>
                   )}
                   
@@ -701,47 +709,6 @@ const SocialDetailPage = () => {
                       </Typography>
                     </Grid>
                   )}
-                  
-                  {/* 정산 참가자 목록 */}
-                  {settlement.participants && settlement.participants.length > 0 && (
-                    <Grid item xs={12}>
-                      <Divider sx={{ my: 1 }} />
-                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                        정산 참가자 목록 ({settlement.participants.length}명)
-                      </Typography>
-                      <Grid container spacing={1}>
-                        {settlement.participants.map((p) => (
-                          <Grid item xs={12} sm={6} key={p.user_id ?? p.guest_id ?? p.id}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                              <Typography variant="body2">
-                                {p.user_name || p.user_nickname || '-'}
-                              </Typography>
-                              {p.amount_paid !== undefined && (
-                                <Typography variant="body2" color="text.secondary">
-                                  ({p.amount_paid?.toLocaleString() || 0}원)
-                                </Typography>
-                              )}
-                              {p.is_paid && (
-                                <Chip label="납부완료" size="small" color="success" />
-                              )}
-                              {!p.is_paid && (
-                                <Chip label="미납부" size="small" color="default" />
-                              )}
-                              <Button
-                                size="small"
-                                variant="outlined"
-                                startIcon={<CheckIcon />}
-                                onClick={() => handleOpenPayModal(p)}
-                                sx={{ ml: 0.5 }}
-                              >
-                                {p.is_paid ? '수정' : '납부 완료'}
-                              </Button>
-                            </Box>
-                          </Grid>
-                        ))}
-                      </Grid>
-                    </Grid>
-                  )}
                 </Grid>
               ) : (
                 <Typography variant="body2" color="text.secondary">
@@ -752,47 +719,6 @@ const SocialDetailPage = () => {
           </Card>
         </Grid>
       </Grid>
-
-      {/* 납부 완료 모달 */}
-      <Dialog open={payModalOpen} onClose={() => setPayModalOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>납부 완료</DialogTitle>
-        <DialogContent>
-          {payTarget && (
-            <Box sx={{ pt: 1 }}>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                {payTarget.user_name || payTarget.user_nickname || '-'} 참가자
-              </Typography>
-              <TextField
-                fullWidth
-                label="납부 금액 (원)"
-                type="number"
-                value={payAmount}
-                onChange={(e) => setPayAmount(e.target.value)}
-                placeholder="비워두면 부담금 전액으로 처리"
-                InputProps={{ inputProps: { min: 0 } }}
-              />
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                빈 값이면 정산 부담금 전액으로 납부 완료 처리됩니다.
-              </Typography>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          {payTarget?.is_paid && (
-            <Button
-              color="error"
-              onClick={handleMarkUnpaid}
-              disabled={markPaidMutation.isPending}
-            >
-              미납부로 변경
-            </Button>
-          )}
-          <Button onClick={() => setPayModalOpen(false)}>취소</Button>
-          <Button variant="contained" onClick={handleMarkPaid} disabled={markPaidMutation.isPending}>
-            납부 완료
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 };
