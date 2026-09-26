@@ -180,8 +180,11 @@ const ClubCreatePage = () => {
     try {
       // clubsApi.uploadFile은 /v1/admin/upload 엔드포인트를 사용
       const response = await clubsApi.uploadFile(file);
-      // 다양한 백엔드 응답 필드를 호환 처리
-      const uploadedUrl = response?.url || response?.file_url || response?.upload_path || response?.filename;
+      // file_id 를 가장 먼저 본다. 업로드는 Google Drive 로 가고,
+      // 첨부 미리보기(ClubApplicationDetailPage)는 file_id 로만 조회한다.
+      // filename 을 저장하면 파일에 다시 도달할 방법이 없다.
+      const uploadedUrl =
+        response?.file_id || response?.url || response?.file_url || response?.upload_path || response?.filename;
       return uploadedUrl;
     } catch (error) {
       console.error('파일 업로드 실패:', error);
